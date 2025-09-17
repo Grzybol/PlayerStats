@@ -349,6 +349,8 @@ public final class PlayerStatsPlaceholderExpansion extends PlaceholderExpansion 
 
         private static final Set<String> KNOWN_FLAGS = Set.of("formatted", "format", "value", "raw", "rank");
 
+        private record StatisticMatch(String statisticName, int endIndex) { }
+
         private static PlaceholderArguments parse(String params,
                                                    @Nullable Player player,
                                                    @NotNull EnumHandler enumHandler,
@@ -489,12 +491,27 @@ public final class PlayerStatsPlaceholderExpansion extends PlaceholderExpansion 
                 return Collections.emptyList();
             }
 
-            List<String> segments = new ArrayList<>();
-            segments.add(tokens[0]);
+            StatisticMatch explicitTargetMatch = findStatistic(tokens, 1, enumHandler);
+            if (explicitTargetMatch != null) {
+                return buildSegments(tokens, explicitTargetMatch, tokens[0]);
+            }
 
-            int index = 1;
-            StringBuilder candidateBuilder = new StringBuilder(tokens[index]);
-            int statisticEndIndex = index;
+            StatisticMatch inferredTargetMatch = findStatistic(tokens, 0, enumHandler);
+            if (inferredTargetMatch != null) {
+                String inferredTarget = inferTarget(tokens, inferredTargetMatch.endIndex() + 1);
+                return buildSegments(tokens, inferredTargetMatch, inferredTarget);
+            }
+
+            return Collections.emptyList();
+        }
+
+        private static StatisticMatch findStatistic(String[] tokens, int startIndex, EnumHandler enumHandler) {
+            if (startIndex >= tokens.length) {
+                return null;
+            }
+
+            StringBuilder candidateBuilder = new StringBuilder(tokens[startIndex]);
+            int statisticEndIndex = startIndex;
             Statistic matchedStatistic = null;
             while (statisticEndIndex < tokens.length) {
                 String candidate = candidateBuilder.toString().replace('+', '_');
@@ -504,18 +521,28 @@ public final class PlayerStatsPlaceholderExpansion extends PlaceholderExpansion 
                 }
                 statisticEndIndex++;
                 if (statisticEndIndex >= tokens.length) {
-                    return Collections.emptyList();
+                    return null;
                 }
                 candidateBuilder.append('_').append(tokens[statisticEndIndex]);
             }
 
             if (matchedStatistic == null) {
+                return null;
+            }
+
+            return new StatisticMatch(candidateBuilder.toString().replace('+', '_'), statisticEndIndex);
+        }
+
+        private static List<String> buildSegments(String[] tokens, StatisticMatch statisticMatch, String targetSegment) {
+            if (targetSegment == null || targetSegment.isEmpty()) {
                 return Collections.emptyList();
             }
 
-            segments.add(candidateBuilder.toString().replace('+', '_'));
-            index = statisticEndIndex + 1;
+            List<String> segments = new ArrayList<>();
+            segments.add(targetSegment);
+            segments.add(statisticMatch.statisticName());
 
+            int index = statisticMatch.endIndex() + 1;
             if (index < tokens.length) {
                 StringBuilder subStatBuilder = new StringBuilder();
                 while (index < tokens.length) {
@@ -545,10 +572,28 @@ public final class PlayerStatsPlaceholderExpansion extends PlaceholderExpansion 
             return segments;
         }
 
+        private static String inferTarget(String[] tokens, int optionStartIndex) {
+            if (optionStartIndex < tokens.length) {
+                for (int i = optionStartIndex; i < tokens.length; i++) {
+                    String token = tokens[i];
+                    int equalsIndex = token.indexOf('=');
+                    String key = equalsIndex >= 0 ? token.substring(0, equalsIndex).toLowerCase(Locale.ENGLISH) : token.toLowerCase(Locale.ENGLISH);
+                    if (key.equals("player")) {
+                        return "player";
+                    }
+                    if (key.equals("size") || key.equals("top") || key.equals("position") || key.equals("pos")) {
+                        return "top";
+                    }
+                }
+            }
+
+            return "server";
+        }
+
         private static PlaceholderTarget parseTarget(String segment) {
             return switch (segment.toLowerCase(Locale.ENGLISH)) {
                 case "player", "p", "me" -> PlaceholderTarget.PLAYER;
-                case "server", "s" -> PlaceholderTarget.SERVER;
+                case "server", "s", "statistic", "statistc", "stat" -> PlaceholderTarget.SERVER;
                 case "top", "t" -> PlaceholderTarget.TOP;
                 default -> throw new IllegalArgumentException("Unknown target: " + segment);
             };

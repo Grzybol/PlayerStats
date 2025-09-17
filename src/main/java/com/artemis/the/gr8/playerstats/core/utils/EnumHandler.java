@@ -139,8 +139,18 @@ public final class EnumHandler {
      * @return the Statistic enum constant, or null
      */
     public @Nullable Statistic getStatEnum(@NotNull String statName)  {
+        String normalized = statName.trim().toUpperCase(Locale.ENGLISH);
+
+        Statistic aliasMatch = switch (normalized) {
+            case "PLAY_TIME", "PLAYTIME", "TIME_PLAYED" -> Statistic.PLAY_ONE_MINUTE;
+            default -> null;
+        };
+        if (aliasMatch != null) {
+            return aliasMatch;
+        }
+
         try {
-            return Statistic.valueOf(statName.toUpperCase(Locale.ENGLISH));
+            return Statistic.valueOf(normalized);
         }
         catch (IllegalArgumentException e) {
             return null;
