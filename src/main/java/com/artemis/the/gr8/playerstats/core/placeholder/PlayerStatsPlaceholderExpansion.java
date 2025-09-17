@@ -353,16 +353,31 @@ public final class PlayerStatsPlaceholderExpansion extends PlaceholderExpansion 
                                                    @Nullable Player player,
                                                    @NotNull EnumHandler enumHandler,
                                                    @NotNull OfflinePlayerHandler offlinePlayerHandler) {
-            List<String> segments = splitPlaceholderSegments(params);
+            List<String> segments = splitPlaceholderSegments(params, enumHandler);
             if (segments.size() < 2) {
                 throw new IllegalArgumentException("Placeholder needs at least a target and statistic");
             }
 
-            PlaceholderTarget target = parseTarget(segments.get(0));
-            Statistic statistic = parseStatistic(segments.get(1), enumHandler);
+            String firstSegment = segments.get(0);
+            PlaceholderTarget target;
+            String requestedPlayer = null;
+            int nextIndex = 1;
+            try {
+                target = parseTarget(firstSegment);
+            } catch (IllegalArgumentException exception) {
+                if (offlinePlayerHandler.isIncludedPlayer(firstSegment)
+                        || offlinePlayerHandler.isExcludedPlayer(firstSegment)
+                        || (player != null && firstSegment.equalsIgnoreCase(player.getName()))) {
+                    target = PlaceholderTarget.PLAYER;
+                    requestedPlayer = firstSegment;
+                } else {
+                    throw exception;
+                }
+            }
+
+            Statistic statistic = parseStatistic(segments.get(nextIndex), enumHandler);
 
             String subStat = null;
-            String requestedPlayer = null;
             String worldName = null;
             Integer topSize = null;
             Integer position = null;
@@ -371,7 +386,7 @@ public final class PlayerStatsPlaceholderExpansion extends PlaceholderExpansion 
             boolean returnRank = false;
             boolean allowExcluded = ConfigHandler.getInstance().allowPlayerLookupsForExcludedPlayers();
 
-            for (int i = 2; i < segments.size(); i++) {
+            for (int i = nextIndex + 1; i < segments.size(); i++) {
                 String segment = segments.get(i);
                 if (segment.isEmpty()) {
                     continue;
@@ -389,7 +404,7 @@ public final class PlayerStatsPlaceholderExpansion extends PlaceholderExpansion 
                         case "allowexcluded" -> allowExcluded = Boolean.parseBoolean(value);
                         default -> {
                             if (subStat == null && !KNOWN_FLAGS.contains(segment.toLowerCase(Locale.ENGLISH))) {
-                                subStat = value;
+                                subStat = value.replace('+', '_');
                             }
                         }
                     }
@@ -411,7 +426,7 @@ public final class PlayerStatsPlaceholderExpansion extends PlaceholderExpansion 
                 }
 
                 if (subStat == null) {
-                    subStat = segment;
+                    subStat = segment.replace('+', '_');
                 }
             }
 
@@ -442,7 +457,7 @@ public final class PlayerStatsPlaceholderExpansion extends PlaceholderExpansion 
                     ", allowExcluded=" + allowExcluded;
         }
 
-        private static List<String> splitPlaceholderSegments(String params) {
+        private static List<String> splitPlaceholderSegments(String params, EnumHandler enumHandler) {
             List<String> segments = new ArrayList<>();
             for (String part : OPTION_SPLIT_PATTERN.split(params)) {
                 String trimmed = part.trim();
@@ -455,7 +470,79 @@ public final class PlayerStatsPlaceholderExpansion extends PlaceholderExpansion 
                 return segments;
             }
 
+            List<String> underscoreSegments = tryParseUnderscoreFormat(params, enumHandler);
+            if (underscoreSegments.size() >= 2) {
+                return underscoreSegments;
+            }
+
             return LegacyPlaceholderParser.tryParse(params);
+        }
+
+        private static List<String> tryParseUnderscoreFormat(String params, EnumHandler enumHandler) {
+            String trimmed = params == null ? "" : params.trim();
+            if (trimmed.isEmpty() || !trimmed.contains("_")) {
+                return Collections.emptyList();
+            }
+
+            String[] tokens = trimmed.split("_");
+            if (tokens.length < 2) {
+                return Collections.emptyList();
+            }
+
+            List<String> segments = new ArrayList<>();
+            segments.add(tokens[0]);
+
+            int index = 1;
+            StringBuilder candidateBuilder = new StringBuilder(tokens[index]);
+            int statisticEndIndex = index;
+            Statistic matchedStatistic = null;
+            while (statisticEndIndex < tokens.length) {
+                String candidate = candidateBuilder.toString().replace('+', '_');
+                matchedStatistic = enumHandler.getStatEnum(candidate);
+                if (matchedStatistic != null) {
+                    break;
+                }
+                statisticEndIndex++;
+                if (statisticEndIndex >= tokens.length) {
+                    return Collections.emptyList();
+                }
+                candidateBuilder.append('_').append(tokens[statisticEndIndex]);
+            }
+
+            if (matchedStatistic == null) {
+                return Collections.emptyList();
+            }
+
+            segments.add(candidateBuilder.toString().replace('+', '_'));
+            index = statisticEndIndex + 1;
+
+            if (index < tokens.length) {
+                StringBuilder subStatBuilder = new StringBuilder();
+                while (index < tokens.length) {
+                    String token = tokens[index];
+                    String lowerToken = token.toLowerCase(Locale.ENGLISH);
+                    if (token.contains("=") || KNOWN_FLAGS.contains(lowerToken)) {
+                        break;
+                    }
+                    if (subStatBuilder.length() > 0) {
+                        subStatBuilder.append('_');
+                    }
+                    subStatBuilder.append(token);
+                    index++;
+                }
+                if (subStatBuilder.length() > 0) {
+                    segments.add(subStatBuilder.toString().replace('+', '_'));
+                }
+                while (index < tokens.length) {
+                    String token = tokens[index];
+                    if (!token.isEmpty()) {
+                        segments.add(token);
+                    }
+                    index++;
+                }
+            }
+
+            return segments;
         }
 
         private static PlaceholderTarget parseTarget(String segment) {
@@ -468,7 +555,7 @@ public final class PlayerStatsPlaceholderExpansion extends PlaceholderExpansion 
         }
 
         private static Statistic parseStatistic(String segment, EnumHandler enumHandler) {
-            Statistic statistic = enumHandler.getStatEnum(segment.trim());
+            Statistic statistic = enumHandler.getStatEnum(segment.trim().replace('+', '_'));
             if (statistic == null) {
                 throw new IllegalArgumentException("Unknown statistic: " + segment);
             }
