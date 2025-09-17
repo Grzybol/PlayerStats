@@ -2,7 +2,7 @@ package com.artemis.the.gr8.playerstats.core.sharing;
 
 import com.artemis.the.gr8.playerstats.core.Main;
 import com.artemis.the.gr8.playerstats.core.config.ConfigHandler;
-import com.artemis.the.gr8.playerstats.core.utils.MyLogger;
+import com.artemis.the.gr8.playerstats.core.utils.PluginLogger;
 import com.artemis.the.gr8.playerstats.core.utils.Reloadable;
 import net.kyori.adventure.text.TextComponent;
 import org.bukkit.command.CommandSender;
@@ -79,7 +79,7 @@ public final class ShareManager implements Reloadable {
                 sharedResults = null;
             }
             if (config.allowStatSharing() && !config.useHoverText()) {
-                MyLogger.logWarning("Stat-sharing does not work without hover-text enabled! " +
+                PluginLogger.logWarning("Stat-sharing does not work without hover-text enabled! " +
                         "Enable hover-text, or disable stat-sharing to stop seeing this message.");
             }
         }
@@ -96,7 +96,7 @@ public final class ShareManager implements Reloadable {
         StoredResult result = new StoredResult(playerName, statResult, ID);
         int shareCode = result.hashCode();
         statResultQueue.put(shareCode, result);
-        MyLogger.logMediumLevelMsg("Saving statResults with no. " + ID);
+        PluginLogger.logMediumLevelMsg("Saving statResults with no. " + ID);
         return shareCode;
     }
 
@@ -125,7 +125,7 @@ public final class ShareManager implements Reloadable {
             shareTimeStamp.put(playerName, Instant.now());
 
             if (!sharedResults.offer(shareCode)) {  //create a new ArrayBlockingQueue if our queue is full
-                MyLogger.logMediumLevelMsg("500 stat-results have been shared, " +
+                PluginLogger.logMediumLevelMsg("500 stat-results have been shared, " +
                         "creating a new internal queue with the most recent 50 share-code-values and discarding the rest...");
                 ArrayBlockingQueue<Integer> newQueue = new ArrayBlockingQueue<>(500);
 
@@ -161,7 +161,7 @@ public final class ShareManager implements Reloadable {
                     .parallelStream()
                     .min(Comparator.comparing(StoredResult::ID))
                     .orElseThrow().hashCode();
-            MyLogger.logMediumLevelMsg("Removing old stat no. " + statResultQueue.get(hashCode).ID() + " for player " + playerName);
+            PluginLogger.logMediumLevelMsg("Removing old stat no. " + statResultQueue.get(hashCode).ID() + " for player " + playerName);
             statResultQueue.remove(hashCode);
         }
     }

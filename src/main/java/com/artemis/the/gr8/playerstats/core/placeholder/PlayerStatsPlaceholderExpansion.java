@@ -11,6 +11,7 @@ import com.artemis.the.gr8.playerstats.core.statistic.StatRequestManager;
 import com.artemis.the.gr8.playerstats.core.statistic.TopStatRequest;
 import com.artemis.the.gr8.playerstats.core.utils.EnumHandler;
 import com.artemis.the.gr8.playerstats.core.utils.OfflinePlayerHandler;
+import com.artemis.the.gr8.playerstats.core.utils.PluginLogger;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.Material;
 import org.bukkit.Statistic;
@@ -25,7 +26,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.logging.Level;
 import java.util.regex.Pattern;
 
 /**
@@ -94,25 +94,34 @@ public final class PlayerStatsPlaceholderExpansion extends PlaceholderExpansion 
 
     @Override
     public @Nullable String onPlaceholderRequest(Player player, @NotNull String params) {
+        PluginLogger.log(PluginLogger.LogLevel.PLACEHOLDER,
+                "Received placeholder request '" + params + "' from " + (player != null ? player.getName() : "null"));
         try {
             PlaceholderArguments arguments = PlaceholderArguments.parse(params, player, enumHandler, offlinePlayerHandler);
+            PluginLogger.log(PluginLogger.LogLevel.PLACEHOLDER,
+                    "Parsed placeholder arguments: " + arguments.debugSummary());
             return switch (arguments.target) {
                 case PLAYER -> handlePlayerPlaceholder(arguments);
                 case SERVER -> handleServerPlaceholder(arguments);
                 case TOP -> handleTopPlaceholder(arguments);
             };
         } catch (IllegalArgumentException exception) {
-            plugin.getLogger().log(Level.FINEST, "Failed to parse placeholder request: " + params, exception);
+            PluginLogger.logException(exception, "PlayerStatsPlaceholderExpansion",
+                    "onPlaceholderRequest params='" + params + "'");
             return "";
         }
     }
 
     private @Nullable String handlePlayerPlaceholder(@NotNull PlaceholderArguments arguments) {
         if (arguments.playerName == null) {
+            PluginLogger.log(PluginLogger.LogLevel.PLACEHOLDER,
+                    "Player placeholder missing player context: " + arguments.debugSummary());
             return "";
         }
 
         if (!arguments.allowExcluded && offlinePlayerHandler.isExcludedPlayer(arguments.playerName)) {
+            PluginLogger.log(PluginLogger.LogLevel.PLACEHOLDER,
+                    "Player placeholder blocked for excluded player '" + arguments.playerName + "'");
             return "";
         }
 
@@ -122,14 +131,22 @@ public final class PlayerStatsPlaceholderExpansion extends PlaceholderExpansion 
 
         StatRequest<Integer> configuredRequest = configureRequest(request, arguments.statistic, arguments.subStatisticName);
         if (configuredRequest == null || !configuredRequest.isValid()) {
+            PluginLogger.log(PluginLogger.LogLevel.PLACEHOLDER,
+                    "Invalid player placeholder request: " + arguments.debugSummary());
             return "";
         }
 
         StatResult<Integer> result = StatRequestManager.execute(configuredRequest);
         if (arguments.formatted) {
-            return result.formattedString();
+            String output = result.formattedString();
+            PluginLogger.log(PluginLogger.LogLevel.PLACEHOLDER,
+                    "Player placeholder formatted output: '" + output + "'");
+            return output;
         }
-        return String.valueOf(result.value());
+        String value = String.valueOf(result.value());
+        PluginLogger.log(PluginLogger.LogLevel.PLACEHOLDER,
+                "Player placeholder numeric output: '" + value + "'");
+        return value;
     }
 
     private @Nullable String handleServerPlaceholder(@NotNull PlaceholderArguments arguments) {
@@ -139,14 +156,22 @@ public final class PlayerStatsPlaceholderExpansion extends PlaceholderExpansion 
 
         StatRequest<Long> configuredRequest = configureRequest(request, arguments.statistic, arguments.subStatisticName);
         if (configuredRequest == null || !configuredRequest.isValid()) {
+            PluginLogger.log(PluginLogger.LogLevel.PLACEHOLDER,
+                    "Invalid server placeholder request: " + arguments.debugSummary());
             return "";
         }
 
         StatResult<Long> result = StatRequestManager.execute(configuredRequest);
         if (arguments.formatted) {
-            return result.formattedString();
+            String output = result.formattedString();
+            PluginLogger.log(PluginLogger.LogLevel.PLACEHOLDER,
+                    "Server placeholder formatted output: '" + output + "'");
+            return output;
         }
-        return String.valueOf(result.value());
+        String value = String.valueOf(result.value());
+        PluginLogger.log(PluginLogger.LogLevel.PLACEHOLDER,
+                "Server placeholder numeric output: '" + value + "'");
+        return value;
     }
 
     private @Nullable String handleTopPlaceholder(@NotNull PlaceholderArguments arguments) {
@@ -160,17 +185,24 @@ public final class PlayerStatsPlaceholderExpansion extends PlaceholderExpansion 
 
         StatRequest<LinkedHashMap<String, Integer>> configuredRequest = configureRequest(request, arguments.statistic, arguments.subStatisticName);
         if (configuredRequest == null || !configuredRequest.isValid()) {
+            PluginLogger.log(PluginLogger.LogLevel.PLACEHOLDER,
+                    "Invalid top placeholder request: " + arguments.debugSummary());
             return "";
         }
 
         StatResult<LinkedHashMap<String, Integer>> result = StatRequestManager.execute(configuredRequest);
         LinkedHashMap<String, Integer> values = result.value();
         if (values.isEmpty()) {
+            PluginLogger.log(PluginLogger.LogLevel.PLACEHOLDER,
+                    "Top placeholder returned no results: " + arguments.debugSummary());
             return "";
         }
 
         if (arguments.formatted && arguments.position == null && arguments.playerName == null) {
-            return result.formattedString();
+            String output = result.formattedString();
+            PluginLogger.log(PluginLogger.LogLevel.PLACEHOLDER,
+                    "Top placeholder formatted list output: '" + output + "'");
+            return output;
         }
 
         if (arguments.playerName != null) {
@@ -183,12 +215,21 @@ public final class PlayerStatsPlaceholderExpansion extends PlaceholderExpansion 
 
         Map.Entry<String, Integer> firstEntry = values.entrySet().iterator().next();
         if (arguments.returnValue) {
-            return String.valueOf(firstEntry.getValue());
+            String value = String.valueOf(firstEntry.getValue());
+            PluginLogger.log(PluginLogger.LogLevel.PLACEHOLDER,
+                    "Top placeholder returning value for first entry: '" + value + "'");
+            return value;
         }
         if (arguments.formatted) {
-            return formatTopEntry(1, firstEntry.getKey(), firstEntry.getValue());
+            String output = formatTopEntry(1, firstEntry.getKey(), firstEntry.getValue());
+            PluginLogger.log(PluginLogger.LogLevel.PLACEHOLDER,
+                    "Top placeholder formatted first entry: '" + output + "'");
+            return output;
         }
-        return firstEntry.getKey();
+        String playerName = firstEntry.getKey();
+        PluginLogger.log(PluginLogger.LogLevel.PLACEHOLDER,
+                "Top placeholder returning first entry player: '" + playerName + "'");
+        return playerName;
     }
 
     private @Nullable String handleTopPlayer(@NotNull PlaceholderArguments arguments, LinkedHashMap<String, Integer> values) {
@@ -196,23 +237,38 @@ public final class PlayerStatsPlaceholderExpansion extends PlaceholderExpansion 
         for (Map.Entry<String, Integer> entry : values.entrySet()) {
             if (entry.getKey().equalsIgnoreCase(arguments.playerName)) {
                 if (arguments.returnRank) {
-                    return String.valueOf(index);
+                    String rank = String.valueOf(index);
+                    PluginLogger.log(PluginLogger.LogLevel.PLACEHOLDER,
+                            "Top placeholder returning rank '" + rank + "' for player '" + entry.getKey() + "'");
+                    return rank;
                 }
                 if (arguments.returnValue) {
-                    return String.valueOf(entry.getValue());
+                    String value = String.valueOf(entry.getValue());
+                    PluginLogger.log(PluginLogger.LogLevel.PLACEHOLDER,
+                            "Top placeholder returning value '" + value + "' for player '" + entry.getKey() + "'");
+                    return value;
                 }
                 if (arguments.formatted) {
-                    return formatTopEntry(index, entry.getKey(), entry.getValue());
+                    String output = formatTopEntry(index, entry.getKey(), entry.getValue());
+                    PluginLogger.log(PluginLogger.LogLevel.PLACEHOLDER,
+                            "Top placeholder formatted output for player '" + entry.getKey() + "': '" + output + "'");
+                    return output;
                 }
+                PluginLogger.log(PluginLogger.LogLevel.PLACEHOLDER,
+                        "Top placeholder returning player name '" + entry.getKey() + "' at position " + index);
                 return entry.getKey();
             }
             index++;
         }
+        PluginLogger.log(PluginLogger.LogLevel.PLACEHOLDER,
+                "Top placeholder could not find player '" + arguments.playerName + "'");
         return "";
     }
 
     private @Nullable String handleTopPosition(@NotNull PlaceholderArguments arguments, LinkedHashMap<String, Integer> values) {
         if (arguments.position <= 0 || arguments.position > values.size()) {
+            PluginLogger.log(PluginLogger.LogLevel.PLACEHOLDER,
+                    "Top placeholder requested invalid position " + arguments.position + ": " + arguments.debugSummary());
             return "";
         }
 
@@ -222,15 +278,25 @@ public final class PlayerStatsPlaceholderExpansion extends PlaceholderExpansion 
             Map.Entry<String, Integer> entry = iterator.next();
             if (counter == arguments.position) {
                 if (arguments.returnValue) {
-                    return String.valueOf(entry.getValue());
+                    String value = String.valueOf(entry.getValue());
+                    PluginLogger.log(PluginLogger.LogLevel.PLACEHOLDER,
+                            "Top placeholder returning value '" + value + "' for position " + counter);
+                    return value;
                 }
                 if (arguments.formatted) {
-                    return formatTopEntry(counter, entry.getKey(), entry.getValue());
+                    String output = formatTopEntry(counter, entry.getKey(), entry.getValue());
+                    PluginLogger.log(PluginLogger.LogLevel.PLACEHOLDER,
+                            "Top placeholder formatted output for position " + counter + ": '" + output + "'");
+                    return output;
                 }
+                PluginLogger.log(PluginLogger.LogLevel.PLACEHOLDER,
+                        "Top placeholder returning player '" + entry.getKey() + "' for position " + counter);
                 return entry.getKey();
             }
             counter++;
         }
+        PluginLogger.log(PluginLogger.LogLevel.PLACEHOLDER,
+                "Top placeholder failed to resolve position " + arguments.position + ": " + arguments.debugSummary());
         return "";
     }
 
@@ -357,6 +423,20 @@ public final class PlayerStatsPlaceholderExpansion extends PlaceholderExpansion 
 
             return new PlaceholderArguments(target, statistic, subStat, requestedPlayer,
                     worldName, topSize, position, formatted, returnValue, returnRank, allowExcluded);
+        }
+
+        public String debugSummary() {
+            return "target=" + target +
+                    ", statistic=" + statistic +
+                    (subStatisticName != null ? ":" + subStatisticName : "") +
+                    ", player=" + playerName +
+                    ", world=" + worldName +
+                    ", topSize=" + topListSize +
+                    ", position=" + position +
+                    ", formatted=" + formatted +
+                    ", valueOnly=" + returnValue +
+                    ", rank=" + returnRank +
+                    ", allowExcluded=" + allowExcluded;
         }
 
         private static PlaceholderTarget parseTarget(String segment) {

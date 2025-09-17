@@ -1,7 +1,7 @@
 package com.artemis.the.gr8.playerstats.core.multithreading;
 
 import com.artemis.the.gr8.playerstats.core.config.ConfigHandler;
-import com.artemis.the.gr8.playerstats.core.utils.MyLogger;
+import com.artemis.the.gr8.playerstats.core.utils.PluginLogger;
 import com.artemis.the.gr8.playerstats.core.utils.OfflinePlayerHandler;
 import com.artemis.the.gr8.playerstats.core.utils.UnixTimeHandler;
 import org.bukkit.OfflinePlayer;
@@ -43,7 +43,7 @@ final class PlayerLoadAction extends RecursiveAction {
         this.end = end;
         this.offlinePlayerUUIDs = offlinePlayerUUIDs;
 
-        MyLogger.subActionCreated(Thread.currentThread().getName());
+        PluginLogger.subActionCreated(Thread.currentThread().getName());
     }
 
     @Override
@@ -71,7 +71,7 @@ final class PlayerLoadAction extends RecursiveAction {
         for (int i = start; i < end; i++) {
             OfflinePlayer player = players[i];
             String playerName = player.getName();
-            MyLogger.actionRunning(Thread.currentThread().getName());
+            PluginLogger.actionRunning(Thread.currentThread().getName());
             if (playerName != null &&
                     !offlinePlayerHandler.isExcludedPlayer(player.getUniqueId()) &&
                     UnixTimeHandler.hasPlayedSince(lastPlayedLimit, player.getLastPlayed())) {

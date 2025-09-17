@@ -3,7 +3,7 @@ package com.artemis.the.gr8.playerstats.core.config;
 import com.artemis.the.gr8.playerstats.api.enums.Target;
 import com.artemis.the.gr8.playerstats.api.enums.Unit;
 import com.artemis.the.gr8.playerstats.core.utils.YamlFileHandler;
-import com.artemis.the.gr8.playerstats.core.utils.MyLogger;
+import com.artemis.the.gr8.playerstats.core.utils.PluginLogger;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.jetbrains.annotations.Nullable;
@@ -23,7 +23,7 @@ public final class ConfigHandler extends YamlFileHandler {
 
         configVersion = 8;
         checkAndUpdateConfigVersion();
-        MyLogger.setDebugLevel(getDebugLevel());
+        PluginLogger.setDebugLevel(getDebugLevel());
     }
 
     public static ConfigHandler getInstance() {
@@ -44,7 +44,7 @@ public final class ConfigHandler extends YamlFileHandler {
     public void reload() {
         super.reload();
         config = super.getFileConfiguration();
-        MyLogger.setDebugLevel(getDebugLevel());
+        PluginLogger.setDebugLevel(getDebugLevel());
     }
 
     /**
@@ -69,7 +69,7 @@ public final class ConfigHandler extends YamlFileHandler {
             super.addValues(defaultValues);
             reload();
 
-            MyLogger.logLowLevelMsg("Your config has been updated to version " + configVersion +
+            PluginLogger.logLowLevelMsg("Your config has been updated to version " + configVersion +
                     ", but all of your custom settings should still be there!");
         }
     }
@@ -196,7 +196,7 @@ public final class ConfigHandler extends YamlFileHandler {
             };
             return section.getBoolean(path, def);
         }
-        MyLogger.logWarning("Config settings for use-enters could not be retrieved! " +
+        PluginLogger.logWarning("Config settings for use-enters could not be retrieved! " +
                 "Please check your file if you want to use custom settings. " +
                 "Using default values...");
         return def;

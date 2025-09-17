@@ -4,7 +4,7 @@ import com.artemis.the.gr8.playerstats.core.msg.OutputManager;
 import com.artemis.the.gr8.playerstats.core.statistic.StatRequestManager;
 import com.artemis.the.gr8.playerstats.api.StatRequest;
 import com.artemis.the.gr8.playerstats.api.StatResult;
-import com.artemis.the.gr8.playerstats.core.utils.MyLogger;
+import com.artemis.the.gr8.playerstats.core.utils.PluginLogger;
 import com.artemis.the.gr8.playerstats.core.enums.StandardMessage;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.Nullable;
@@ -27,22 +27,22 @@ final class StatThread extends Thread {
         statRequest = s;
 
         this.setName("StatThread-" + statRequest.getSettings().getCommandSender().getName() + "-" + ID);
-        MyLogger.logHighLevelMsg(this.getName() + " created!");
+        PluginLogger.logHighLevelMsg(this.getName() + " created!");
     }
 
     @Override
     public void run() throws IllegalStateException {
-        MyLogger.logHighLevelMsg(this.getName() + " started!");
+        PluginLogger.logHighLevelMsg(this.getName() + " started!");
         CommandSender statRequester = statRequest.getSettings().getCommandSender();
 
         if (reloadThread != null && reloadThread.isAlive()) {
             try {
-                MyLogger.logLowLevelMsg(this.getName() + ": Waiting for " + reloadThread.getName() + " to finish up...");
+                PluginLogger.logLowLevelMsg(this.getName() + ": Waiting for " + reloadThread.getName() + " to finish up...");
                 outputManager.sendFeedbackMsg(statRequester, StandardMessage.STILL_RELOADING);
                 reloadThread.join();
 
             } catch (InterruptedException e) {
-                MyLogger.logException(e, "StatThread", "Trying to join " + reloadThread.getName());
+                PluginLogger.logException(e, "StatThread", "Trying to join " + reloadThread.getName());
                 throw new RuntimeException(e);
             }
         }

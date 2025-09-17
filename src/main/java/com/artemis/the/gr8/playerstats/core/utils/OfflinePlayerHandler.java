@@ -141,7 +141,7 @@ public final class OfflinePlayerHandler extends YamlFileHandler {
             return Bukkit.getOfflinePlayer(includedPlayerUUIDs.get(playerName));
         }
         else {
-            MyLogger.logWarning("Cannot calculate statistics for player-name: " + playerName +
+            PluginLogger.logWarning("Cannot calculate statistics for player-name: " + playerName +
                     "! Double-check if the name is spelled correctly (including capital letters), " +
                     "or if any of your config settings exclude them");
             throw new IllegalArgumentException("PlayerStats does not know a player by this name");
@@ -181,8 +181,8 @@ public final class OfflinePlayerHandler extends YamlFileHandler {
 
         ForkJoinPool.commonPool().invoke(ThreadManager.getPlayerLoadAction(offlinePlayers, includedPlayerUUIDs));
 
-        MyLogger.actionFinished();
-        MyLogger.logLowLevelTask(("Loaded " + includedPlayerUUIDs.size() + " offline players"), startTime);
+        PluginLogger.actionFinished();
+        PluginLogger.logLowLevelTask(("Loaded " + includedPlayerUUIDs.size() + " offline players"), startTime);
     }
 
     private void loadExcludedPlayerNames() {
@@ -201,7 +201,7 @@ public final class OfflinePlayerHandler extends YamlFileHandler {
                             }
                         });
 
-        MyLogger.logLowLevelTask("Loaded " + excludedPlayerUUIDs.size() + " excluded players from file", time);
+        PluginLogger.logLowLevelTask("Loaded " + excludedPlayerUUIDs.size() + " excluded players from file", time);
     }
 
     private OfflinePlayer[] getWhitelistedPlayers() {

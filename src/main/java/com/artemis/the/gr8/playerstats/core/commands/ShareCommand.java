@@ -5,7 +5,7 @@ import com.artemis.the.gr8.playerstats.core.enums.StandardMessage;
 import com.artemis.the.gr8.playerstats.core.msg.OutputManager;
 import com.artemis.the.gr8.playerstats.core.sharing.StoredResult;
 import com.artemis.the.gr8.playerstats.core.utils.CommandCounter;
-import com.artemis.the.gr8.playerstats.core.utils.MyLogger;
+import com.artemis.the.gr8.playerstats.core.utils.PluginLogger;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -30,7 +30,7 @@ public final class ShareCommand implements CommandExecutor {
             try {
                 shareCode = Integer.parseInt(args[0]);
             } catch (IllegalArgumentException e) {
-                MyLogger.logException(e, "ShareCommand", "/statshare is being called without a valid share-code!");
+                PluginLogger.logException(e, "ShareCommand", "/statshare is being called without a valid share-code!");
                 return false;
             }
             if (shareManager.requestAlreadyShared(shareCode)) {
