@@ -11,13 +11,12 @@ import com.artemis.the.gr8.playerstats.core.msg.OutputManager;
 import com.artemis.the.gr8.playerstats.core.msg.msgutils.LanguageKeyHandler;
 import com.artemis.the.gr8.playerstats.core.msg.msgutils.NumberFormatter;
 import com.artemis.the.gr8.playerstats.core.multithreading.ThreadManager;
+import com.artemis.the.gr8.playerstats.core.placeholder.PlayerStatsPlaceholderExpansion;
 import com.artemis.the.gr8.playerstats.core.sharing.ShareManager;
 import com.artemis.the.gr8.playerstats.core.statistic.StatRequestManager;
 import com.artemis.the.gr8.playerstats.core.storage.WorldStatsDatabase;
 import com.artemis.the.gr8.playerstats.core.storage.WorldStatsSynchronizer;
 import com.artemis.the.gr8.playerstats.core.utils.*;
-import me.clip.placeholderapi.PlaceholderAPIPlugin;
-import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -44,6 +43,9 @@ public final class Main extends JavaPlugin implements PlayerStats {
 
     private static List<Reloadable> reloadables;
     private static List<Closable> closables;
+
+    private PlayerStatsPlaceholderExpansion placeholderExpansion;
+    private boolean placeholderApiActive;
 
     @Override
     public void onEnable() {
@@ -79,6 +81,7 @@ public final class Main extends JavaPlugin implements PlayerStats {
 
         initializeMainClassesInOrder();
         registerCommands();
+        registerPlaceholderExpansion();
         setupMetrics();
 
         // rejestrujemy listener
@@ -96,6 +99,12 @@ public final class Main extends JavaPlugin implements PlayerStats {
         } catch (Exception e) {
             getLogger().warning("Nie udało się zapisać world_stats.json: " + e.getMessage());
         }
+
+        if (placeholderExpansion != null) {
+            placeholderExpansion.unregister();
+            placeholderExpansion = null;
+        }
+        placeholderApiActive = false;
 
         closables.forEach(Closable::close);
         getLogger().info("Disabled PlayerStats!");
@@ -166,20 +175,26 @@ public final class Main extends JavaPlugin implements PlayerStats {
         }
     }
 
+    private void registerPlaceholderExpansion() {
+        if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+            placeholderExpansion = new PlayerStatsPlaceholderExpansion(this);
+            placeholderApiActive = placeholderExpansion.register();
+            if (placeholderApiActive) {
+                getLogger().info("Registered PlayerStats placeholders with PlaceholderAPI");
+            } else {
+                getLogger().warning("Failed to register PlayerStats placeholders with PlaceholderAPI");
+                placeholderExpansion = null;
+            }
+        } else {
+            placeholderApiActive = false;
+            placeholderExpansion = null;
+        }
+    }
+
     private void setupMetrics() {
         final Metrics metrics = new Metrics(pluginInstance, 15923);
-        final boolean placeholderExpansionActive;
-        if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
-            PlaceholderExpansion expansion = PlaceholderAPIPlugin
-                    .getInstance()
-                    .getLocalExpansionManager()
-                    .getExpansion("playerstats");
-            placeholderExpansionActive = expansion != null;
-        } else {
-            placeholderExpansionActive = false;
-        }
         metrics.addCustomChart(new Metrics.SimplePie("using_placeholder_expansion",
-                () -> placeholderExpansionActive ? "yes" : "no"));
+                () -> placeholderApiActive ? "yes" : "no"));
 
         CommandCounter counter = CommandCounter.getInstance();
         metrics.addCustomChart(new Metrics.AdvancedPie("commands_used_the_last_30_minutes",
