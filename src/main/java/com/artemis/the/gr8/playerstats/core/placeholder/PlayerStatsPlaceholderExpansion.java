@@ -20,8 +20,11 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -350,13 +353,13 @@ public final class PlayerStatsPlaceholderExpansion extends PlaceholderExpansion 
                                                    @Nullable Player player,
                                                    @NotNull EnumHandler enumHandler,
                                                    @NotNull OfflinePlayerHandler offlinePlayerHandler) {
-            String[] segments = OPTION_SPLIT_PATTERN.split(params);
-            if (segments.length < 2) {
+            List<String> segments = splitPlaceholderSegments(params);
+            if (segments.size() < 2) {
                 throw new IllegalArgumentException("Placeholder needs at least a target and statistic");
             }
 
-            PlaceholderTarget target = parseTarget(segments[0]);
-            Statistic statistic = parseStatistic(segments[1], enumHandler);
+            PlaceholderTarget target = parseTarget(segments.get(0));
+            Statistic statistic = parseStatistic(segments.get(1), enumHandler);
 
             String subStat = null;
             String requestedPlayer = null;
@@ -368,8 +371,8 @@ public final class PlayerStatsPlaceholderExpansion extends PlaceholderExpansion 
             boolean returnRank = false;
             boolean allowExcluded = ConfigHandler.getInstance().allowPlayerLookupsForExcludedPlayers();
 
-            for (int i = 2; i < segments.length; i++) {
-                String segment = segments[i].trim();
+            for (int i = 2; i < segments.size(); i++) {
+                String segment = segments.get(i);
                 if (segment.isEmpty()) {
                     continue;
                 }
@@ -439,6 +442,22 @@ public final class PlayerStatsPlaceholderExpansion extends PlaceholderExpansion 
                     ", allowExcluded=" + allowExcluded;
         }
 
+        private static List<String> splitPlaceholderSegments(String params) {
+            List<String> segments = new ArrayList<>();
+            for (String part : OPTION_SPLIT_PATTERN.split(params)) {
+                String trimmed = part.trim();
+                if (!trimmed.isEmpty()) {
+                    segments.add(trimmed);
+                }
+            }
+
+            if (segments.size() >= 2) {
+                return segments;
+            }
+
+            return LegacyPlaceholderParser.tryParse(params);
+        }
+
         private static PlaceholderTarget parseTarget(String segment) {
             return switch (segment.toLowerCase(Locale.ENGLISH)) {
                 case "player", "p", "me" -> PlaceholderTarget.PLAYER;
@@ -462,6 +481,62 @@ public final class PlayerStatsPlaceholderExpansion extends PlaceholderExpansion 
             } catch (NumberFormatException ignored) {
                 return null;
             }
+        }
+    }
+
+    private static final class LegacyPlaceholderParser {
+
+        private static List<String> tryParse(String rawParams) {
+            String params = rawParams == null ? "" : rawParams.trim();
+            if (params.isEmpty()) {
+                return Collections.emptyList();
+            }
+
+            List<String> segments = new ArrayList<>();
+
+            int colonIndex = params.indexOf(':');
+            if (colonIndex >= 0) {
+                String head = params.substring(0, colonIndex).trim();
+                if (!head.isEmpty()) {
+                    segments.add(head);
+                }
+                String remainder = params.substring(colonIndex + 1).trim();
+                if (!remainder.isEmpty()) {
+                    for (String part : remainder.split(",")) {
+                        String trimmed = part.trim();
+                        if (!trimmed.isEmpty()) {
+                            segments.add(trimmed);
+                        }
+                    }
+                }
+            } else if (params.contains(",")) {
+                for (String part : params.split(",")) {
+                    String trimmed = part.trim();
+                    if (!trimmed.isEmpty()) {
+                        segments.add(trimmed);
+                    }
+                }
+            }
+
+            if (segments.isEmpty()) {
+                return segments;
+            }
+
+            if (segments.get(0).equalsIgnoreCase("top") && segments.size() >= 3) {
+                String possibleNumber = segments.get(1);
+                if (possibleNumber.chars().allMatch(Character::isDigit)) {
+                    List<String> normalized = new ArrayList<>();
+                    normalized.add(segments.get(0));
+                    normalized.add(segments.get(2));
+                    normalized.add("position=" + possibleNumber);
+                    for (int i = 3; i < segments.size(); i++) {
+                        normalized.add(segments.get(i));
+                    }
+                    return normalized;
+                }
+            }
+
+            return segments;
         }
     }
 }
