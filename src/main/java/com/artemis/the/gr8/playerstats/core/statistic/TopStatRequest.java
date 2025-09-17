@@ -13,13 +13,29 @@ import java.util.LinkedHashMap;
 
 public final class TopStatRequest extends StatRequest<LinkedHashMap<String, Integer>> implements RequestGenerator<LinkedHashMap<String, Integer>> {
 
+
+    // Nowy konstruktor: globalnie
     public TopStatRequest(int topListSize) {
-        this(Bukkit.getConsoleSender(), topListSize);
+        this(Bukkit.getConsoleSender(), topListSize, null);
     }
 
-    public TopStatRequest(CommandSender sender, int topListSize) {
+    // Nowy konstruktor: per world
+    public TopStatRequest(int topListSize, String worldName) {
+        this(Bukkit.getConsoleSender(), topListSize, worldName);
+    }
+
+    // Nowy konstruktor: z senderem i worldName
+    public TopStatRequest(CommandSender sender, int topListSize, String worldName) {
         super(sender);
         super.configureForTop(topListSize);
+        if (worldName != null) {
+            super.getSettings().setWorldName(worldName);
+        }
+    }
+
+    // Zachowujemy stary konstruktor dla kompatybilności
+    public TopStatRequest(CommandSender sender, int topListSize) {
+        this(sender, topListSize, null);
     }
 
     @Override

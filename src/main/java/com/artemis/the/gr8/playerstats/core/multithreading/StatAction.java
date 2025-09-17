@@ -59,6 +59,12 @@ final class StatAction extends RecursiveTask<ConcurrentHashMap<String, Integer>>
     private ConcurrentHashMap<String, Integer> getStatsDirectly() {
         OfflinePlayerHandler offlinePlayerHandler = OfflinePlayerHandler.getInstance();
 
+        String worldName = requestSettings.getWorldName();
+        org.bukkit.World world = null;
+        if (worldName != null) {
+            world = org.bukkit.Bukkit.getWorld(worldName);
+        }
+
         Iterator<String> iterator = playerNames.iterator();
         if (iterator.hasNext()) {
             do {
@@ -67,7 +73,17 @@ final class StatAction extends RecursiveTask<ConcurrentHashMap<String, Integer>>
                 OfflinePlayer player = offlinePlayerHandler.getIncludedOfflinePlayer(playerName);
                 int statistic = 0;
                 switch (requestSettings.getStatistic().getType()) {
-                    case UNTYPED -> statistic = player.getStatistic(requestSettings.getStatistic());
+                    case UNTYPED -> {
+                        if (world != null) {
+                            // Per-world -> nasza baza
+                            java.util.UUID uuid = player.getUniqueId();
+                            statistic = com.artemis.the.gr8.playerstats.core.Main.worldStatsDb
+                                    .getStat(uuid, world.getName(), requestSettings.getStatistic());
+                        } else {
+                            // Globalne
+                            statistic = player.getStatistic(requestSettings.getStatistic());
+                        }
+                    }
                     case ENTITY -> statistic = player.getStatistic(requestSettings.getStatistic(), requestSettings.getEntity());
                     case BLOCK -> statistic = player.getStatistic(requestSettings.getStatistic(), requestSettings.getBlock());
                     case ITEM -> statistic = player.getStatistic(requestSettings.getStatistic(), requestSettings.getItem());
@@ -79,4 +95,5 @@ final class StatAction extends RecursiveTask<ConcurrentHashMap<String, Integer>>
         }
         return allStats;
     }
+
 }

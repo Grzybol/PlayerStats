@@ -69,19 +69,35 @@ final class BukkitProcessor extends RequestProcessor {
     }
 
     private int getPlayerStat(@NotNull StatRequest.Settings requestSettings) {
-        OfflinePlayer player;
-        if (offlinePlayerHandler.isExcludedPlayer(requestSettings.getPlayerName()) &&
-                config.allowPlayerLookupsForExcludedPlayers()) {
-            player = offlinePlayerHandler.getExcludedOfflinePlayer(requestSettings.getPlayerName());
+        String worldName = requestSettings.getWorldName();
+        if (worldName != null) {
+            // Odczyt z lokalnej bazy jeśli worldName podany
+            java.util.UUID uuid = null;
+            try {
+                uuid = java.util.UUID.fromString(requestSettings.getPlayerName());
+            } catch (IllegalArgumentException e) {
+                OfflinePlayer player = org.bukkit.Bukkit.getOfflinePlayer(requestSettings.getPlayerName());
+                uuid = player.getUniqueId();
+            }
+            // Dostęp do singletona bazy
+            com.artemis.the.gr8.playerstats.core.storage.WorldStatsDatabase db = com.artemis.the.gr8.playerstats.core.Main.worldStatsDb;
+            return db.getStat(uuid, worldName, requestSettings.getStatistic());
         } else {
-            player = offlinePlayerHandler.getIncludedOfflinePlayer(requestSettings.getPlayerName());
+            // Tryb globalny jak dotychczas
+            OfflinePlayer player;
+            if (offlinePlayerHandler.isExcludedPlayer(requestSettings.getPlayerName()) &&
+                    config.allowPlayerLookupsForExcludedPlayers()) {
+                player = offlinePlayerHandler.getExcludedOfflinePlayer(requestSettings.getPlayerName());
+            } else {
+                player = offlinePlayerHandler.getIncludedOfflinePlayer(requestSettings.getPlayerName());
+            }
+            return switch (requestSettings.getStatistic().getType()) {
+                case UNTYPED -> player.getStatistic(requestSettings.getStatistic());
+                case ENTITY -> player.getStatistic(requestSettings.getStatistic(), requestSettings.getEntity());
+                case BLOCK -> player.getStatistic(requestSettings.getStatistic(), requestSettings.getBlock());
+                case ITEM -> player.getStatistic(requestSettings.getStatistic(), requestSettings.getItem());
+            };
         }
-        return switch (requestSettings.getStatistic().getType()) {
-            case UNTYPED -> player.getStatistic(requestSettings.getStatistic());
-            case ENTITY -> player.getStatistic(requestSettings.getStatistic(), requestSettings.getEntity());
-            case BLOCK -> player.getStatistic(requestSettings.getStatistic(), requestSettings.getBlock());
-            case ITEM -> player.getStatistic(requestSettings.getStatistic(), requestSettings.getItem());
-        };
     }
 
     private long getServerStat(StatRequest.Settings requestSettings) {

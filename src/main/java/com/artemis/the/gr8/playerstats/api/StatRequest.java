@@ -100,22 +100,40 @@ public abstract class StatRequest<T> {
 
 
   public static final class Settings {
-    private final CommandSender sender;
-    private Statistic statistic;
-    private String playerName;
-    private Target target;
-    private int topListSize;
+  private final CommandSender sender;
+  private Statistic statistic;
+  private String playerName;
+  private Target target;
+  private int topListSize;
 
-    private String subStatEntryName;
-    private EntityType entity;
-    private Material block;
-    private Material item;
+  private String subStatEntryName;
+  private EntityType entity;
+  private Material block;
+  private Material item;
+
+  // Nowe pole: nazwa świata (null = globalnie)
+  private String worldName;
 
     /**
      * @param sender the CommandSender who prompted this RequestGenerator
      */
     private Settings(@NotNull CommandSender sender) {
-        this.sender = sender;
+    this.sender = sender;
+  }
+
+  /**
+   * Ustaw nazwę świata, dla którego mają być pobierane statystyki.
+   * Jeśli null, pobierane są globalnie.
+   */
+  public void setWorldName(String worldName) {
+    this.worldName = worldName;
+  }
+
+  /**
+   * Pobierz nazwę świata, dla którego mają być pobierane statystyki (null = globalnie).
+   */
+  public String getWorldName() {
+    return worldName;
     }
 
     public @NotNull CommandSender getCommandSender() {
@@ -135,7 +153,7 @@ public abstract class StatRequest<T> {
     }
 
     public String getPlayerName() {
-      return playerName;
+  return playerName;
     }
 
     public @NotNull Target getTarget() {
@@ -143,7 +161,7 @@ public abstract class StatRequest<T> {
     }
 
     public int getTopListSize() {
-      return this.topListSize;
+  return this.topListSize;
     }
 
     public EntityType getEntity() {

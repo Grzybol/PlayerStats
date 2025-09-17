@@ -3,50 +3,48 @@ name: PlayerStats
 version: 2.6
 api-version: 1.13
 folia-supported: true
-description: adds commands to view player statistics in chat
+description: Adds commands to view player statistics in chat
 author: Artemis_the_gr8
 softdepend:
   - PlaceholderAPI
+
 commands:
   statistic:
-    aliases:
-      - stat
-      - stats
-    description: show player statistics in private chat
+    aliases: [stat, stats]
+    description: Show player statistics in private chat
     usage: "§6/stat info"
     permission: playerstats.stat
+
   statisticshare:
-    aliases:
-      - statshare
-      - statsshare
-    description: share last stat lookup in chat
-    usage: "§6/This command can only be executed by clicking the \"share\" button in /stat results. 
-    If you don't see this button, you don't have share-permission, or sharing is turned off."
+    aliases: [statshare, statsshare]
+    description: Share last stat lookup in chat
+    usage: |
+      §6/This command can only be executed by clicking the "share" button in /stat results.
+      If you don't see this button, you don't have share-permission, or sharing is turned off.
     permission: playerstats.share
+
   statisticreload:
-    aliases:
-      - statreload
-      - statsreload
-    description: reloads the config
+    aliases: [statreload, statsreload]
+    description: Reloads the config
     usage: "§6/statreload"
     permission: playerstats.reload
+
   statisticexclude:
-    aliases:
-      - statexclude
-      - statsexclude
-    description: hide this player's statistics from /stat results
+    aliases: [statexclude, statsexclude]
+    description: Hide this player's statistics from /stat results
     usage: "§6/statexclude info"
     permission: playerstats.exclude
+
 permissions:
   playerstats.stat:
-    description: allows usage of /statistic
+    description: Allows usage of /statistic
     default: true
   playerstats.share:
-    description: allows sharing stats in chat
+    description: Allows sharing stats in chat
     default: true
   playerstats.exclude:
-    description: allows usage of /statexclude
+    description: Allows usage of /statexclude
     default: op
   playerstats.reload:
-    description: allows usage of /statreload
+    description: Allows usage of /statreload
     default: op

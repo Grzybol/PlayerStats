@@ -12,13 +12,28 @@ import org.jetbrains.annotations.NotNull;
 public final class ServerStatRequest extends StatRequest<Long> implements RequestGenerator<Long> {
 
 
+    // Nowy konstruktor: globalnie
     public ServerStatRequest() {
-        this(Bukkit.getConsoleSender());
+        this(Bukkit.getConsoleSender(), null);
     }
 
-    public ServerStatRequest(CommandSender sender) {
+    // Nowy konstruktor: per world
+    public ServerStatRequest(String worldName) {
+        this(Bukkit.getConsoleSender(), worldName);
+    }
+
+    // Nowy konstruktor: z senderem i worldName
+    public ServerStatRequest(CommandSender sender, String worldName) {
         super(sender);
         super.configureForServer();
+        if (worldName != null) {
+            super.getSettings().setWorldName(worldName);
+        }
+    }
+
+    // Zachowujemy stary konstruktor dla kompatybilności
+    public ServerStatRequest(CommandSender sender) {
+        this(sender, null);
     }
 
     @Override

@@ -13,13 +13,29 @@ import org.jetbrains.annotations.NotNull;
 
 public final class PlayerStatRequest extends StatRequest<Integer> implements RequestGenerator<Integer> {
 
+
+    // Nowy konstruktor: globalnie
     public PlayerStatRequest(String playerName) {
-        this(Bukkit.getConsoleSender(), playerName);
+        this(Bukkit.getConsoleSender(), playerName, null);
     }
 
-    public PlayerStatRequest(CommandSender sender, String playerName) {
+    // Nowy konstruktor: per world
+    public PlayerStatRequest(String playerName, String worldName) {
+        this(Bukkit.getConsoleSender(), playerName, worldName);
+    }
+
+    // Nowy konstruktor: z senderem i worldName
+    public PlayerStatRequest(CommandSender sender, String playerName, String worldName) {
         super(sender);
         super.configureForPlayer(playerName);
+        if (worldName != null) {
+            super.getSettings().setWorldName(worldName);
+        }
+    }
+
+    // Zachowujemy stary konstruktor dla kompatybilności
+    public PlayerStatRequest(CommandSender sender, String playerName) {
+        this(sender, playerName, null);
     }
 
     @Override
