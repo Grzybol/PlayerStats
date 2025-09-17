@@ -2,7 +2,7 @@ package com.artemis.the.gr8.playerstats.core.multithreading;
 
 import com.artemis.the.gr8.playerstats.api.StatRequest;
 import com.artemis.the.gr8.playerstats.core.utils.OfflinePlayerHandler;
-import com.artemis.the.gr8.playerstats.core.utils.MyLogger;
+import com.artemis.the.gr8.playerstats.core.utils.PluginLogger;
 import com.google.common.collect.ImmutableList;
 import org.bukkit.OfflinePlayer;
 
@@ -37,7 +37,7 @@ final class StatAction extends RecursiveTask<ConcurrentHashMap<String, Integer>>
         this.requestSettings = requestSettings;
         this.allStats = allStats;
 
-        MyLogger.subActionCreated(Thread.currentThread().getName());
+        PluginLogger.subActionCreated(Thread.currentThread().getName());
     }
 
     @Override
@@ -69,7 +69,7 @@ final class StatAction extends RecursiveTask<ConcurrentHashMap<String, Integer>>
         if (iterator.hasNext()) {
             do {
                 String playerName = iterator.next();
-                MyLogger.actionRunning(Thread.currentThread().getName());
+                PluginLogger.actionRunning(Thread.currentThread().getName());
                 OfflinePlayer player = offlinePlayerHandler.getIncludedOfflinePlayer(playerName);
                 int statistic = 0;
                 switch (requestSettings.getStatistic().getType()) {

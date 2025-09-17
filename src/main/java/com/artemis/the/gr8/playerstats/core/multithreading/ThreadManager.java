@@ -5,7 +5,7 @@ import com.artemis.the.gr8.playerstats.core.msg.OutputManager;
 import com.artemis.the.gr8.playerstats.core.config.ConfigHandler;
 import com.artemis.the.gr8.playerstats.core.enums.StandardMessage;
 import com.artemis.the.gr8.playerstats.api.StatRequest;
-import com.artemis.the.gr8.playerstats.core.utils.MyLogger;
+import com.artemis.the.gr8.playerstats.core.utils.PluginLogger;
 import com.artemis.the.gr8.playerstats.core.utils.OfflinePlayerHandler;
 import com.google.common.collect.ImmutableList;
 import org.bukkit.OfflinePlayer;
@@ -62,13 +62,13 @@ public final class ThreadManager {
         ConcurrentHashMap<String, Integer> resultingStatNumbers = new ConcurrentHashMap<>(relevantPlayerNames.size());
         StatAction task = new StatAction(relevantPlayerNames, requestSettings, resultingStatNumbers);
 
-        MyLogger.actionCreated(relevantPlayerNames.size());
+        PluginLogger.actionCreated(relevantPlayerNames.size());
         return task;
     }
 
     public static @NotNull PlayerLoadAction getPlayerLoadAction(OfflinePlayer[] playersToLoad, ConcurrentHashMap<String, UUID> mapToFill) {
         PlayerLoadAction task = new PlayerLoadAction(playersToLoad, mapToFill);
-        MyLogger.actionCreated(playersToLoad != null ? playersToLoad.length : 0);
+        PluginLogger.actionCreated(playersToLoad != null ? playersToLoad.length : 0);
         return task;
     }
 
@@ -80,7 +80,7 @@ public final class ThreadManager {
             activatedReloadThread.start();
         }
         else {
-            MyLogger.logLowLevelMsg("Another reloadThread is already running! (" + activatedReloadThread.getName() + ")");
+            PluginLogger.logLowLevelMsg("Another reloadThread is already running! (" + activatedReloadThread.getName() + ")");
         }
     }
 

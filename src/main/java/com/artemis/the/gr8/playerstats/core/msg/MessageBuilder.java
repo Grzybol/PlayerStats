@@ -5,7 +5,7 @@ import com.artemis.the.gr8.playerstats.core.msg.components.*;
 import com.artemis.the.gr8.playerstats.core.msg.msgutils.*;
 import com.artemis.the.gr8.playerstats.api.StatRequest;
 import com.artemis.the.gr8.playerstats.core.utils.EnumHandler;
-import com.artemis.the.gr8.playerstats.core.utils.MyLogger;
+import com.artemis.the.gr8.playerstats.core.utils.PluginLogger;
 import com.artemis.the.gr8.playerstats.api.enums.Target;
 import com.artemis.the.gr8.playerstats.core.config.ConfigHandler;
 import com.artemis.the.gr8.playerstats.api.enums.Unit;
@@ -607,7 +607,7 @@ public final class MessageBuilder implements StatTextFormatter {
     private TextComponent getTimeNumberComponent(long statNumber, Target target) {
         ArrayList<Unit> unitRange = getTimeUnitRange(statNumber);
         if (unitRange.size() <= 1 || (useHoverText && unitRange.size() <= 3)) {
-            MyLogger.logWarning("There is something wrong with the time-units you specified, please check your config!");
+            PluginLogger.logWarning("There is something wrong with the time-units you specified, please check your config!");
             return componentFactory.timeNumber(formatter.formatDefaultNumber(statNumber), target);
         }
         else {
@@ -616,7 +616,7 @@ public final class MessageBuilder implements StatTextFormatter {
                 return componentFactory.timeNumber(mainNumber, target);
             } else {
                 String hoverNumber = formatter.formatTimeNumber(statNumber, unitRange.get(2), unitRange.get(3));
-                MyLogger.logHighLevelMsg("mainNumber: " + mainNumber + ", hoverNumber: " + hoverNumber);
+                PluginLogger.logHighLevelMsg("mainNumber: " + mainNumber + ", hoverNumber: " + hoverNumber);
                 return componentFactory.timeNumberWithHoverText(mainNumber, hoverNumber, target);
             }
         }

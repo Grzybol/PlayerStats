@@ -40,7 +40,7 @@ public abstract class YamlFileHandler implements Reloadable {
             loadFile();
         } else {
             fileConfiguration = YamlConfiguration.loadConfiguration(file);
-            MyLogger.logLowLevelMsg(fileName + " reloaded!");
+            PluginLogger.logLowLevelMsg(fileName + " reloaded!");
         }
     }
 

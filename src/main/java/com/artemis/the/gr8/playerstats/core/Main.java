@@ -17,8 +17,13 @@ import com.artemis.the.gr8.playerstats.core.statistic.StatRequestManager;
 import com.artemis.the.gr8.playerstats.core.storage.WorldStatsDatabase;
 import com.artemis.the.gr8.playerstats.core.storage.WorldStatsSynchronizer;
 import com.artemis.the.gr8.playerstats.core.utils.*;
+import com.artemis.the.gr8.playerstats.core.utils.PluginLogger.LogLevel;
+import org.betterbox.elasticBuffer.ElasticBuffer;
+import org.betterbox.elasticBuffer.ElasticBufferAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -54,6 +59,9 @@ public final class Main extends JavaPlugin implements PlayerStats {
             getDataFolder().mkdirs();
         }
 
+        PluginLogger.init(this);
+        loadElasticBuffer();
+
         // Inicjalizacja lokalnej bazy statystyk per world
         worldStatsFile = new File(getDataFolder(), "world_stats.json");
         worldStatsDb = new WorldStatsDatabase();
@@ -63,17 +71,17 @@ public final class Main extends JavaPlugin implements PlayerStats {
         if (!worldStatsFile.exists()) {
             try {
                 worldStatsFile.createNewFile();
-                getLogger().info("Utworzono pusty world_stats.json");
+                PluginLogger.log(LogLevel.INFO, "Utworzono pusty world_stats.json");
             } catch (Exception e) {
-                getLogger().warning("Nie udało się utworzyć world_stats.json: " + e.getMessage());
+                PluginLogger.log(LogLevel.WARNING, "Nie udało się utworzyć world_stats.json: " + e.getMessage());
             }
         }
 
         try {
             worldStatsSync.load();
-            getLogger().info("Załadowano world_stats.json");
+            PluginLogger.log(LogLevel.INFO, "Załadowano world_stats.json");
         } catch (Exception e) {
-            getLogger().warning("Nie udało się załadować world_stats.json: " + e.getMessage());
+            PluginLogger.log(LogLevel.WARNING, "Nie udało się załadować world_stats.json: " + e.getMessage());
         }
 
         reloadables = new ArrayList<>();
@@ -87,7 +95,7 @@ public final class Main extends JavaPlugin implements PlayerStats {
         // rejestrujemy listener
         Bukkit.getPluginManager().registerEvents(new JoinListener(), this);
 
-        getLogger().info("Enabled PlayerStats!");
+        PluginLogger.log(LogLevel.INFO, "Enabled PlayerStats!");
     }
 
     @Override
@@ -95,9 +103,9 @@ public final class Main extends JavaPlugin implements PlayerStats {
         // Zapis bazy przy wyłączaniu pluginu
         try {
             worldStatsSync.save();
-            getLogger().info("Zapisano world_stats.json");
+            PluginLogger.log(LogLevel.INFO, "Zapisano world_stats.json");
         } catch (Exception e) {
-            getLogger().warning("Nie udało się zapisać world_stats.json: " + e.getMessage());
+            PluginLogger.log(LogLevel.WARNING, "Nie udało się zapisać world_stats.json: " + e.getMessage());
         }
 
         if (placeholderExpansion != null) {
@@ -107,7 +115,7 @@ public final class Main extends JavaPlugin implements PlayerStats {
         placeholderApiActive = false;
 
         closables.forEach(Closable::close);
-        getLogger().info("Disabled PlayerStats!");
+        PluginLogger.log(LogLevel.INFO, "Disabled PlayerStats!");
     }
 
     public void reloadPlugin() {
@@ -180,14 +188,38 @@ public final class Main extends JavaPlugin implements PlayerStats {
             placeholderExpansion = new PlayerStatsPlaceholderExpansion(this);
             placeholderApiActive = placeholderExpansion.register();
             if (placeholderApiActive) {
-                getLogger().info("Registered PlayerStats placeholders with PlaceholderAPI");
+                PluginLogger.log(LogLevel.INFO, "Registered PlayerStats placeholders with PlaceholderAPI");
             } else {
-                getLogger().warning("Failed to register PlayerStats placeholders with PlaceholderAPI");
+                PluginLogger.log(LogLevel.WARNING, "Failed to register PlayerStats placeholders with PlaceholderAPI");
                 placeholderExpansion = null;
             }
         } else {
             placeholderApiActive = false;
             placeholderExpansion = null;
+        }
+    }
+
+    private void loadElasticBuffer() {
+        try {
+            PluginManager pm = Bukkit.getPluginManager();
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                PluginLogger.log(LogLevel.WARNING, "[PlayerStats] Initialization delay interrupted: " + e.getMessage());
+                Thread.currentThread().interrupt();
+            }
+            Plugin elasticBufferPlugin = pm.getPlugin("ElasticBuffer");
+            if (elasticBufferPlugin == null) {
+                PluginLogger.log(LogLevel.DEBUG, "ElasticBuffer plugin not detected; skipping integration.");
+                return;
+            }
+            if (!(elasticBufferPlugin instanceof ElasticBuffer elasticBuffer)) {
+                PluginLogger.log(LogLevel.WARNING, "Found ElasticBuffer plugin but type mismatch: " + elasticBufferPlugin.getClass().getName());
+                return;
+            }
+            PluginLogger.enableElasticBuffer(new ElasticBufferAPI(elasticBuffer));
+        } catch (Exception e) {
+            PluginLogger.logException(e, "Main", "loadElasticBuffer");
         }
     }
 

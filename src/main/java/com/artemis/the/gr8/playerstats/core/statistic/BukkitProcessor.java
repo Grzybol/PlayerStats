@@ -7,7 +7,7 @@ import com.artemis.the.gr8.playerstats.core.msg.OutputManager;
 import com.artemis.the.gr8.playerstats.core.msg.msgutils.FormattingFunction;
 import com.artemis.the.gr8.playerstats.core.multithreading.ThreadManager;
 import com.artemis.the.gr8.playerstats.core.sharing.ShareManager;
-import com.artemis.the.gr8.playerstats.core.utils.MyLogger;
+import com.artemis.the.gr8.playerstats.core.utils.PluginLogger;
 import com.artemis.the.gr8.playerstats.core.utils.OfflinePlayerHandler;
 import net.kyori.adventure.text.TextComponent;
 import org.bukkit.OfflinePlayer;
@@ -142,15 +142,15 @@ final class BukkitProcessor extends RequestProcessor {
         try {
             allStats = commonPool.invoke(ThreadManager.getStatAction(requestSettings));
         } catch (ConcurrentModificationException e) {
-            MyLogger.logWarning("The requestSettings could not be executed due to a ConcurrentModificationException. " +
+            PluginLogger.logWarning("The requestSettings could not be executed due to a ConcurrentModificationException. " +
                     "This likely happened because Bukkit hasn't fully initialized all player-data yet. " +
                     "Try again and it should be fine!");
             throw new ConcurrentModificationException(e.toString());
         }
 
-        MyLogger.actionFinished();
+        PluginLogger.actionFinished();
         ThreadManager.recordCalcTime(System.currentTimeMillis() - time);
-        MyLogger.logMediumLevelTask("Calculated all stats", time);
+        PluginLogger.logMediumLevelTask("Calculated all stats", time);
 
         return allStats;
     }

@@ -3,7 +3,7 @@ package com.artemis.the.gr8.playerstats.core.multithreading;
 import com.artemis.the.gr8.playerstats.core.Main;
 import com.artemis.the.gr8.playerstats.core.enums.StandardMessage;
 import com.artemis.the.gr8.playerstats.core.msg.OutputManager;
-import com.artemis.the.gr8.playerstats.core.utils.MyLogger;
+import com.artemis.the.gr8.playerstats.core.utils.PluginLogger;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,7 +24,7 @@ final class ReloadThread extends Thread {
         sender = se;
 
         this.setName("ReloadThread-" + ID);
-        MyLogger.logHighLevelMsg(this.getName() + " created!");
+        PluginLogger.logHighLevelMsg(this.getName() + " created!");
     }
 
     /**
@@ -33,19 +33,19 @@ final class ReloadThread extends Thread {
      */
     @Override
     public void run() {
-        MyLogger.logHighLevelMsg(this.getName() + " started!");
+        PluginLogger.logHighLevelMsg(this.getName() + " started!");
 
         if (statThread != null && statThread.isAlive()) {
             try {
-                MyLogger.logLowLevelMsg(this.getName() + ": Waiting for " + statThread.getName() + " to finish up...");
+                PluginLogger.logLowLevelMsg(this.getName() + ": Waiting for " + statThread.getName() + " to finish up...");
                 statThread.join();
             } catch (InterruptedException e) {
-                MyLogger.logException(e, "ReloadThread", "run(), trying to join " + statThread.getName());
+                PluginLogger.logException(e, "ReloadThread", "run(), trying to join " + statThread.getName());
                 throw new RuntimeException(e);
             }
         }
 
-        MyLogger.logLowLevelMsg("Reloading!");
+        PluginLogger.logLowLevelMsg("Reloading!");
         main.reloadPlugin();
 
         if (sender != null) {
