@@ -136,7 +136,7 @@ public final class PlayerStatsPlaceholderExpansion extends PlaceholderExpansion 
             return "";
         }
 
-        StatResult<Integer> result = StatRequestManager.execute(configuredRequest);
+        StatResult<Integer> result = (StatResult<Integer>) StatRequestManager.execute(configuredRequest);
         if (arguments.formatted) {
             String output = result.formattedString();
             PluginLogger.log(PluginLogger.LogLevel.PLACEHOLDER,
@@ -161,7 +161,7 @@ public final class PlayerStatsPlaceholderExpansion extends PlaceholderExpansion 
             return "";
         }
 
-        StatResult<Long> result = StatRequestManager.execute(configuredRequest);
+        StatResult<Long> result = (StatResult<Long>) StatRequestManager.execute(configuredRequest);
         if (arguments.formatted) {
             String output = result.formattedString();
             PluginLogger.log(PluginLogger.LogLevel.PLACEHOLDER,
@@ -190,7 +190,7 @@ public final class PlayerStatsPlaceholderExpansion extends PlaceholderExpansion 
             return "";
         }
 
-        StatResult<LinkedHashMap<String, Integer>> result = StatRequestManager.execute(configuredRequest);
+        StatResult<LinkedHashMap<String, Integer>> result = (StatResult<LinkedHashMap<String, Integer>>) StatRequestManager.execute(configuredRequest);
         LinkedHashMap<String, Integer> values = result.value();
         if (values.isEmpty()) {
             PluginLogger.log(PluginLogger.LogLevel.PLACEHOLDER,
