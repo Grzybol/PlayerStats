@@ -42,8 +42,12 @@ top-10 format or individually. Currently tested on all versions between **1.16.5
 
 
 * **PlaceholderAPI support**
-   - Placeholders are added in a separate expansion, which can be found on [GitHub](https://github.com/Artemis-the-gr8/PlayerStatsExpansion), in the PlaceholderAPI [eCloud](https://api.extendedclip.com/expansions/playerstatsexpansion/), or downloaded in-game with `/papi ecloud download PlayerStats`
-   - For more information about the placeholders, see the expansion's [GitHub](https://github.com/Artemis-the-gr8/PlayerStatsExpansion)!
+   - PlayerStats now ships with a built-in PlaceholderAPI expansion. Install PlaceholderAPI, reload, and the placeholders are registered automatically.
+   - Use placeholders with the syntax `%playerstats_<target>|<statistic>[|<sub-statistic>][|option=value][|flag]%` where `<target>` can be `player`, `server`, or `top`.
+   - Examples:
+     - `%playerstats_player|JUMP|player=Notch%` – total jumps for Notch.
+     - `%playerstats_server|MOB_KILLS|formatted%` – formatted server-wide mob kills.
+     - `%playerstats_top|MINE_BLOCK|diamond_ore|position=1|formatted%` – formatted top entry for diamond ore mining.
 
 
 * **Safe**
