@@ -70,6 +70,7 @@ public final class PluginLogger {
     }
 
     public static synchronized void init(@NotNull JavaPlugin plugin, @NotNull Set<LogLevel> enabledLogLevels) {
+
         instance = new PluginLogger(plugin, enabledLogLevels);
     }
 
