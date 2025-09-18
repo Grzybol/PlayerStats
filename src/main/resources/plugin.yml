@@ -35,6 +35,11 @@ commands:
     usage: "§6/statexclude info"
     permission: playerstats.exclude
 
+  statistics:
+    description: Resetuje statystyki dla wskazanego świata
+    usage: "§6/statistics reset <world> [confirm]"
+    permission: playerstats.statistics.reset
+
 permissions:
   playerstats.stat:
     description: Allows usage of /statistic
@@ -47,4 +52,7 @@ permissions:
     default: op
   playerstats.reload:
     description: Allows usage of /statreload
+    default: op
+  playerstats.statistics.reset:
+    description: Allows resetting per-world statistics
     default: op
