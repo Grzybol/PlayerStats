@@ -1,9 +1,11 @@
 package com.artemis.the.gr8.playerstats.core.storage;
 
 import org.bukkit.Statistic;
+
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
-import java.util.UUID;
+import java.util.Set;
 
 /**
  * Struktura danych do przechowywania statystyk per world dla gracza.
@@ -22,5 +24,17 @@ public class PlayerWorldStats {
 
     public Map<String, Map<Statistic, Integer>> getAllStats() {
         return worldStats;
+    }
+
+    public boolean clearWorld(String world) {
+        return worldStats.remove(world) != null;
+    }
+
+    public boolean hasWorld(String world) {
+        return worldStats.containsKey(world);
+    }
+
+    public Set<String> getRecordedWorlds() {
+        return new HashSet<>(worldStats.keySet());
     }
 }

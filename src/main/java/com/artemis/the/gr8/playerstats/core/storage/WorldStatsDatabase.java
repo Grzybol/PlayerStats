@@ -1,9 +1,11 @@
 package com.artemis.the.gr8.playerstats.core.storage;
 
-import com.artemis.the.gr8.playerstats.core.storage.PlayerWorldStats;
 import org.bukkit.Statistic;
+
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -27,5 +29,30 @@ public class WorldStatsDatabase {
 
     public Map<UUID, PlayerWorldStats> getAll() {
         return playerStats;
+    }
+
+    public boolean resetWorld(String world) {
+        boolean removedAny = false;
+        for (PlayerWorldStats stats : playerStats.values()) {
+            removedAny |= stats.clearWorld(world);
+        }
+        return removedAny;
+    }
+
+    public boolean hasWorld(String world) {
+        for (PlayerWorldStats stats : playerStats.values()) {
+            if (stats.hasWorld(world)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public Set<String> getRecordedWorlds() {
+        Set<String> worlds = new HashSet<>();
+        for (PlayerWorldStats stats : playerStats.values()) {
+            worlds.addAll(stats.getRecordedWorlds());
+        }
+        return worlds;
     }
 }
