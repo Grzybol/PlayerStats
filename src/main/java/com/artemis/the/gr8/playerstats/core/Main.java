@@ -29,8 +29,11 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 public final class Main extends JavaPlugin implements PlayerStats {
 
@@ -181,6 +184,13 @@ public final class Main extends JavaPlugin implements PlayerStats {
         if (sharecmd != null) {
             sharecmd.setExecutor(new ShareCommand());
         }
+
+        PluginCommand statisticscmd = this.getCommand("statistics");
+        if (statisticscmd != null) {
+            StatisticsCommand statisticsCommand = new StatisticsCommand();
+            statisticscmd.setExecutor(statisticsCommand);
+            statisticscmd.setTabCompleter(statisticsCommand);
+        }
     }
 
     private void registerPlaceholderExpansion() {
@@ -252,5 +262,36 @@ public final class Main extends JavaPlugin implements PlayerStats {
     @Override
     public @NotNull StatNumberFormatter getStatNumberFormatter() {
         return new NumberFormatter();
+    }
+
+    public static boolean resetWorldStatistics(String worldName) {
+        if (worldStatsDb == null || worldStatsSync == null) {
+            PluginLogger.log(LogLevel.WARNING, "Próba resetu statystyk świata przed pełną inicjalizacją bazy danych.");
+            return false;
+        }
+
+        boolean removed = worldStatsDb.resetWorld(worldName);
+        if (removed) {
+            try {
+                worldStatsSync.save();
+            } catch (IOException e) {
+                PluginLogger.log(LogLevel.WARNING, "Nie udało się zapisać world_stats.json po resecie świata " + worldName + ": " + e.getMessage());
+            }
+        }
+        return removed;
+    }
+
+    public static boolean hasWorldStatistics(String worldName) {
+        if (worldStatsDb == null) {
+            return false;
+        }
+        return worldStatsDb.hasWorld(worldName);
+    }
+
+    public static Set<String> getWorldsWithStatistics() {
+        if (worldStatsDb == null) {
+            return Collections.emptySet();
+        }
+        return worldStatsDb.getRecordedWorlds();
     }
 }
