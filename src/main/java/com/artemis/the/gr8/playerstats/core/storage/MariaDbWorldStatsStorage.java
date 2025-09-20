@@ -105,7 +105,36 @@ public class MariaDbWorldStatsStorage implements WorldStatsPersistence {
         properties.setProperty("user", settings.username());
         properties.setProperty("password", settings.password());
         properties.setProperty("useSSL", String.valueOf(settings.useSsl()));
-        String url = "jdbc:mariadb://" + settings.host() + ":" + settings.port() + "/" + settings.database();
+        String baseUrl = "jdbc:mariadb://" + settings.host() + ":" + settings.port() + "/";
+        Connection serverConnection = null;
+        try {
+            serverConnection = DriverManager.getConnection(baseUrl, properties);
+            serverConnection.setAutoCommit(false);
+            String databaseIdentifier = "`" + settings.database().replace("`", "") + "`";
+            String createDatabaseSql = "CREATE DATABASE IF NOT EXISTS " + databaseIdentifier;
+            try (Statement statement = serverConnection.createStatement()) {
+                statement.executeUpdate(createDatabaseSql);
+            }
+            serverConnection.commit();
+        } catch (SQLException ex) {
+            if (serverConnection != null) {
+                try {
+                    serverConnection.rollback();
+                } catch (SQLException rollbackEx) {
+                    PluginLogger.log(LogLevel.WARNING, "Failed to rollback MariaDB database creation transaction: " + rollbackEx.getMessage());
+                }
+            }
+            throw ex;
+        } finally {
+            if (serverConnection != null) {
+                try {
+                    serverConnection.close();
+                } catch (SQLException closeEx) {
+                    PluginLogger.log(LogLevel.WARNING, "Failed to close MariaDB server connection: " + closeEx.getMessage());
+                }
+            }
+        }
+        String url = baseUrl + settings.database();
         connection = DriverManager.getConnection(url, properties);
         connection.setAutoCommit(false);
     }
