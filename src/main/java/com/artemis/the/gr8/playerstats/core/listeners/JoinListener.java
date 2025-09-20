@@ -1,6 +1,5 @@
 package com.artemis.the.gr8.playerstats.core.listeners;
 
-import com.artemis.the.gr8.playerstats.core.Main;
 import com.artemis.the.gr8.playerstats.core.storage.WorldStatsDatabase;
 import com.artemis.the.gr8.playerstats.core.utils.OfflinePlayerHandler;
 import org.bukkit.Statistic;
@@ -28,9 +27,9 @@ public class JoinListener implements Listener {
 
     private final Map<UUID, Map<Statistic, Integer>> trackedStatistics;
 
-    public JoinListener() {
+    public JoinListener(WorldStatsDatabase database) {
         offlinePlayerHandler = OfflinePlayerHandler.getInstance();
-        db = Main.worldStatsDb; // zakładam, że masz to w Main jako singleton
+        db = database;
         trackedStatistics = new HashMap<>();
     }
 

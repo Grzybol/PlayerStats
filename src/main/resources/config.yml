@@ -1,7 +1,24 @@
 # ------------------------------------------------------------------------------------------------------ #
 #                                     PlayerStats Configuration                                          #
 # ------------------------------------------------------------------------------------------------------ #
-config-version: 8
+config-version: 9
+
+# Storage backend configuration. Available options are:
+# - file: persist statistics in a JSON file stored in the plugin data folder
+# - mariadb: use a MariaDB database (requires the JDBC driver bundled with the plugin)
+storage:
+  type: file
+  file:
+    # Relative path to the JSON file inside the plugin data folder
+    path: world_stats.json
+  mariadb:
+    host: localhost
+    port: 3306
+    database: playerstats
+    username: playerstats
+    password: 'change-me'
+    table: playerstats_world_stats
+    use-ssl: true
 
 
 #                                # ------------------------------- #                                     #

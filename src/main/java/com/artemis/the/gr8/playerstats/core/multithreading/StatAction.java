@@ -77,7 +77,7 @@ final class StatAction extends RecursiveTask<ConcurrentHashMap<String, Integer>>
                         if (world != null) {
                             // Per-world -> nasza baza
                             java.util.UUID uuid = player.getUniqueId();
-                            statistic = com.artemis.the.gr8.playerstats.core.Main.worldStatsDb
+                            statistic = com.artemis.the.gr8.playerstats.core.Main.getWorldStatsDatabase()
                                     .getStat(uuid, world.getName(), requestSettings.getStatistic());
                         } else {
                             // Globalne

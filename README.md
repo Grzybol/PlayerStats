@@ -82,6 +82,42 @@ top-10 format or individually. Currently tested on all versions between **1.16.5
 
 &nbsp;
 
+## Storage configuration
+PlayerStats keeps the per-world statistic cache in a dedicated storage backend. By default the plugin
+uses a JSON file located inside the plugin data folder, but you can switch to MariaDB for centralized
+deployments.
+
+```yaml
+storage:
+  type: file # or mariadb
+  file:
+    path: world_stats.json
+  mariadb:
+    host: localhost
+    port: 3306
+    database: playerstats
+    username: playerstats
+    password: change-me
+    table: playerstats_world_stats
+    use-ssl: true
+```
+
+### Using the file backend
+Nothing else is required – the file is created automatically on first start inside the plugin data
+folder. Existing installations are migrated transparently to the new location.
+
+### Using MariaDB
+1. Create a database and user with privileges to create tables and modify data.
+2. Update the `storage.mariadb` section with your connection information.
+3. Reload the plugin with `/statisticreload` or restart the server. The plugin will create the
+   required table (`playerstats_world_stats` by default) and migrate any existing JSON data to the
+   database.
+
+Switching the backend later is supported; running `/statisticreload` applies the new configuration
+and automatically reinitializes the connection.
+
+&nbsp;
+
 ## API Usage
 To import the PlayerStats API with Maven, add the following dependency and repository to your POM.xnl:
 
