@@ -80,7 +80,7 @@ final class BukkitProcessor extends RequestProcessor {
                 uuid = player.getUniqueId();
             }
             // Dostęp do singletona bazy
-            com.artemis.the.gr8.playerstats.core.storage.WorldStatsDatabase db = com.artemis.the.gr8.playerstats.core.Main.worldStatsDb;
+            com.artemis.the.gr8.playerstats.core.storage.WorldStatsDatabase db = com.artemis.the.gr8.playerstats.core.Main.getWorldStatsDatabase();
             return db.getStat(uuid, worldName, requestSettings.getStatistic());
         } else {
             // Tryb globalny jak dotychczas

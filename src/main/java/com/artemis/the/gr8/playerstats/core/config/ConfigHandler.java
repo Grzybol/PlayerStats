@@ -2,18 +2,25 @@ package com.artemis.the.gr8.playerstats.core.config;
 
 import com.artemis.the.gr8.playerstats.api.enums.Target;
 import com.artemis.the.gr8.playerstats.api.enums.Unit;
-import com.artemis.the.gr8.playerstats.core.utils.YamlFileHandler;
+import com.artemis.the.gr8.playerstats.core.storage.StorageType;
 import com.artemis.the.gr8.playerstats.core.utils.PluginLogger;
+import com.artemis.the.gr8.playerstats.core.utils.YamlFileHandler;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
+import java.util.Locale;
 
 /** Handles all PlayerStats' config-settings. */
 public final class ConfigHandler extends YamlFileHandler {
 
     private static volatile ConfigHandler instance;
+    private static final String STORAGE_TYPE_PATH = "storage.type";
+    private static final String STORAGE_FILE_PATH = "storage.file.path";
+    private static final String STORAGE_MARIADB_PATH = "storage.mariadb";
+    private static final String DEFAULT_STORAGE_FILE = "world_stats.json";
+
     private final int configVersion;
     private FileConfiguration config;
 
@@ -21,7 +28,7 @@ public final class ConfigHandler extends YamlFileHandler {
         super("config.yml");
         config = super.getFileConfiguration();
 
-        configVersion = 8;
+        configVersion = 9;
         checkAndUpdateConfigVersion();
         PluginLogger.setDebugLevel(getDebugLevel());
     }
@@ -176,6 +183,41 @@ public final class ConfigHandler extends YamlFileHandler {
      */
     public boolean useRainbowMode() {
         return config.getBoolean("rainbow-mode", false);
+    }
+
+    public StorageType getStorageType() {
+        String configuredType = config.getString(STORAGE_TYPE_PATH, StorageType.FILE.name());
+        if (configuredType == null) {
+            return StorageType.FILE;
+        }
+
+        try {
+            return StorageType.valueOf(configuredType.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            PluginLogger.logWarning("Unknown storage.type '" + configuredType + "' in config.yml. Falling back to FILE storage.");
+            return StorageType.FILE;
+        }
+    }
+
+    public String getStorageFilePath() {
+        return config.getString(STORAGE_FILE_PATH, DEFAULT_STORAGE_FILE);
+    }
+
+    public MariaDbSettings getMariaDbSettings() {
+        ConfigurationSection section = config.getConfigurationSection(STORAGE_MARIADB_PATH);
+        if (section == null) {
+            return MariaDbSettings.defaultSettings();
+        }
+
+        String host = section.getString("host", "localhost");
+        int port = section.getInt("port", 3306);
+        String database = section.getString("database", "playerstats");
+        String username = section.getString("username", "playerstats");
+        String password = section.getString("password", "change-me");
+        String table = section.getString("table", "playerstats_world_stats");
+        boolean useSsl = section.getBoolean("use-ssl", true);
+
+        return new MariaDbSettings(host, port, database, username, password, table, useSsl);
     }
 
     /**
@@ -583,6 +625,16 @@ public final class ConfigHandler extends YamlFileHandler {
             default -> {
                 return null;
             }
+        }
+    }
+
+    public record MariaDbSettings(String host, int port, String database,
+                                  String username, String password,
+                                  String table, boolean useSsl) {
+
+        private static MariaDbSettings defaultSettings() {
+            return new MariaDbSettings("localhost", 3306, "playerstats",
+                    "playerstats", "change-me", "playerstats_world_stats", true);
         }
     }
 }

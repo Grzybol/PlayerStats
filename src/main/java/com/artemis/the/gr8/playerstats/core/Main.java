@@ -28,8 +28,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -38,9 +36,8 @@ import java.util.Set;
 public final class Main extends JavaPlugin implements PlayerStats {
 
     // Lokalna baza statystyk per world
-    public static WorldStatsDatabase worldStatsDb;
+    private static WorldStatsDatabase worldStatsDb;
     private static WorldStatsSynchronizer worldStatsSync;
-    private static File worldStatsFile;
 
     private static JavaPlugin pluginInstance;
     private static PlayerStats playerStatsAPI;
@@ -64,60 +61,39 @@ public final class Main extends JavaPlugin implements PlayerStats {
 
         PluginLogger.init(this);
         loadElasticBuffer();
-
-        // Inicjalizacja lokalnej bazy statystyk per world
-        worldStatsFile = new File(getDataFolder(), "world_stats.json");
-        worldStatsDb = new WorldStatsDatabase();
-        worldStatsSync = new WorldStatsSynchronizer(worldStatsDb, worldStatsFile);
-
-        // Jeśli plik nie istnieje – utwórz pusty
-        if (!worldStatsFile.exists()) {
-            try {
-                worldStatsFile.createNewFile();
-                PluginLogger.log(LogLevel.INFO, "Utworzono pusty world_stats.json");
-            } catch (Exception e) {
-                PluginLogger.log(LogLevel.WARNING, "Nie udało się utworzyć world_stats.json: " + e.getMessage());
-            }
-        }
-
-        try {
-            worldStatsSync.load();
-            PluginLogger.log(LogLevel.INFO, "Załadowano world_stats.json");
-        } catch (Exception e) {
-            PluginLogger.log(LogLevel.WARNING, "Nie udało się załadować world_stats.json: " + e.getMessage());
-        }
-
         reloadables = new ArrayList<>();
         closables = new ArrayList<>();
 
-        initializeMainClassesInOrder();
+        try {
+            initializeMainClassesInOrder();
+        } catch (Exception e) {
+            PluginLogger.logException(e, "Main", "onEnable-initialize");
+            PluginLogger.log(LogLevel.ERROR, "Failed to initialize PlayerStats. Disabling plugin.");
+            Bukkit.getPluginManager().disablePlugin(this);
+            return;
+        }
+
         registerCommands();
         registerPlaceholderExpansion();
         setupMetrics();
 
         // rejestrujemy listener
-        Bukkit.getPluginManager().registerEvents(new JoinListener(), this);
+        Bukkit.getPluginManager().registerEvents(new JoinListener(worldStatsDb), this);
 
         PluginLogger.log(LogLevel.INFO, "Enabled PlayerStats!");
     }
 
     @Override
     public void onDisable() {
-        // Zapis bazy przy wyłączaniu pluginu
-        try {
-            worldStatsSync.save();
-            PluginLogger.log(LogLevel.INFO, "Zapisano world_stats.json");
-        } catch (Exception e) {
-            PluginLogger.log(LogLevel.WARNING, "Nie udało się zapisać world_stats.json: " + e.getMessage());
-        }
-
         if (placeholderExpansion != null) {
             placeholderExpansion.unregister();
             placeholderExpansion = null;
         }
         placeholderApiActive = false;
 
-        closables.forEach(Closable::close);
+        if (closables != null) {
+            closables.forEach(Closable::close);
+        }
         PluginLogger.log(LogLevel.INFO, "Disabled PlayerStats!");
     }
 
@@ -148,10 +124,24 @@ public final class Main extends JavaPlugin implements PlayerStats {
         return playerStatsAPI;
     }
 
-    private void initializeMainClassesInOrder() {
+    public static WorldStatsDatabase getWorldStatsDatabase() {
+        return worldStatsDb;
+    }
+
+    public static WorldStatsSynchronizer getWorldStatsSynchronizer() {
+        return worldStatsSync;
+    }
+
+    private void initializeMainClassesInOrder() throws Exception {
         pluginInstance = this;
         playerStatsAPI = this;
         config = ConfigHandler.getInstance();
+
+        worldStatsDb = new WorldStatsDatabase();
+        worldStatsSync = new WorldStatsSynchronizer(this, config, worldStatsDb);
+        registerReloadable(worldStatsSync);
+        registerClosable(worldStatsSync);
+        worldStatsSync.initialize();
 
         LanguageKeyHandler.getInstance();
         OfflinePlayerHandler.getInstance();
@@ -274,8 +264,8 @@ public final class Main extends JavaPlugin implements PlayerStats {
         if (removed) {
             try {
                 worldStatsSync.save();
-            } catch (IOException e) {
-                PluginLogger.log(LogLevel.WARNING, "Nie udało się zapisać world_stats.json po resecie świata " + worldName + ": " + e.getMessage());
+            } catch (Exception e) {
+                PluginLogger.log(LogLevel.WARNING, "Nie udało się zapisać statystyk po resecie świata " + worldName + ": " + e.getMessage());
             }
         }
         return removed;
