@@ -8,6 +8,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -48,6 +49,10 @@ public final class OfflinePlayerHandler extends YamlFileHandler {
         }
     }
 
+    public static @Nullable OfflinePlayerHandler getExistingInstance() {
+        return instance;
+    }
+
     @Override
     public void reload() {
         super.reload();
@@ -71,6 +76,26 @@ public final class OfflinePlayerHandler extends YamlFileHandler {
 
     public boolean isExcludedPlayer(UUID uniqueID) {
         return excludedPlayerUUIDs.containsValue(uniqueID);
+    }
+
+    public @Nullable String getKnownName(@NotNull UUID uniqueID) {
+        String name = findPlayerName(includedPlayerUUIDs, uniqueID);
+        if (name != null) {
+            return name;
+        }
+        return findPlayerName(excludedPlayerUUIDs, uniqueID);
+    }
+
+    private @Nullable String findPlayerName(ConcurrentHashMap<String, UUID> map, UUID uniqueID) {
+        if (map == null || map.isEmpty()) {
+            return null;
+        }
+        for (Map.Entry<String, UUID> entry : map.entrySet()) {
+            if (uniqueID.equals(entry.getValue())) {
+                return entry.getKey();
+            }
+        }
+        return null;
     }
 
     public boolean addPlayerToExcludeList(String playerName) {

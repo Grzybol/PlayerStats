@@ -39,4 +39,42 @@ class MariaDbWorldStatsStorageTest {
 
         assertEquals("FreshName", database.getPlayerName(playerUuid));
     }
+
+    @Test
+    void loadResolvesEmptyNameWhenResolverFindsValue() {
+        MariaDbWorldStatsStorage resolvingStorage = new TestMariaDbWorldStatsStorage("RecoveredName");
+
+        resolvingStorage.applyLoadedStat(database, playerUuid, "", "world", Statistic.WALK_ONE_CM, 42);
+
+        assertEquals("RecoveredName", database.getPlayerName(playerUuid));
+    }
+
+    @Test
+    void cacheResolvedPlayerNameUpdatesStats() {
+        MariaDbWorldStatsStorage resolvingStorage = new TestMariaDbWorldStatsStorage("ResolvedOnSave");
+        PlayerWorldStats stats = database.getOrCreatePlayerStats(playerUuid);
+
+        String resolved = resolvingStorage.cacheResolvedPlayerName(database, playerUuid, stats, "testing");
+
+        assertEquals("ResolvedOnSave", resolved);
+        assertEquals("ResolvedOnSave", stats.getPlayerName());
+        assertEquals("ResolvedOnSave", database.getPlayerName(playerUuid));
+    }
+
+    private static class TestMariaDbWorldStatsStorage extends MariaDbWorldStatsStorage {
+
+        private final String nameToReturn;
+
+        private TestMariaDbWorldStatsStorage(String nameToReturn) {
+            super(new ConfigHandler.MariaDbSettings(
+                    "localhost", 3306, "playerstats", "playerstats",
+                    "change-me", "playerstats_world_stats", true));
+            this.nameToReturn = nameToReturn;
+        }
+
+        @Override
+        protected String resolvePlayerName(UUID uuid) {
+            return nameToReturn;
+        }
+    }
 }

@@ -1,8 +1,11 @@
 package com.artemis.the.gr8.playerstats.core.storage;
 
 import com.artemis.the.gr8.playerstats.core.config.ConfigHandler;
+import com.artemis.the.gr8.playerstats.core.utils.OfflinePlayerHandler;
 import com.artemis.the.gr8.playerstats.core.utils.PluginLogger;
 import com.artemis.the.gr8.playerstats.core.utils.PluginLogger.LogLevel;
+import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.Statistic;
 
 import java.sql.Connection;
@@ -56,8 +59,11 @@ public class MariaDbWorldStatsStorage implements WorldStatsPersistence {
 
     void applyLoadedStat(WorldStatsDatabase database, UUID uuid, String playerName,
                          String world, Statistic statistic, int value) {
+        PlayerWorldStats stats = database.getOrCreatePlayerStats(uuid);
         if (playerName != null && !playerName.isEmpty()) {
             database.setPlayerName(uuid, playerName);
+        } else {
+            cacheResolvedPlayerName(database, uuid, stats, "loading data from MariaDB");
         }
         database.setStat(uuid, world, statistic, value);
     }
@@ -76,6 +82,9 @@ public class MariaDbWorldStatsStorage implements WorldStatsPersistence {
                 UUID uuid = entry.getKey();
                 PlayerWorldStats stats = entry.getValue();
                 String playerName = stats.getPlayerName();
+                if (playerName == null || playerName.isEmpty()) {
+                    playerName = cacheResolvedPlayerName(database, uuid, stats, "saving data to MariaDB");
+                }
                 for (Map.Entry<String, Map<Statistic, Integer>> worldEntry : stats.getAllStats().entrySet()) {
                     String world = worldEntry.getKey();
                     for (Map.Entry<Statistic, Integer> statEntry : worldEntry.getValue().entrySet()) {
@@ -108,6 +117,95 @@ public class MariaDbWorldStatsStorage implements WorldStatsPersistence {
             } finally {
                 connection = null;
             }
+        }
+    }
+
+    String cacheResolvedPlayerName(WorldStatsDatabase database, UUID uuid, PlayerWorldStats stats, String context) {
+        if (stats == null) {
+            stats = database.getOrCreatePlayerStats(uuid);
+        }
+
+        String cachedName = stats.getPlayerName();
+        if (cachedName != null && !cachedName.isEmpty()) {
+            return cachedName;
+        }
+
+        String resolvedName = resolvePlayerName(uuid);
+        if (!resolvedName.isEmpty()) {
+            stats.setPlayerName(resolvedName);
+            database.setPlayerName(uuid, resolvedName);
+            return resolvedName;
+        }
+
+        logWarningSafe("Unable to resolve player name for UUID " + uuid + " while " + context + ".");
+        return "";
+    }
+
+    protected String resolvePlayerName(UUID uuid) {
+        if (uuid == null) {
+            return "";
+        }
+
+        String bukkitName = resolveNameWithBukkit(uuid);
+        if (!bukkitName.isEmpty()) {
+            return bukkitName;
+        }
+
+        OfflinePlayerHandler handler = OfflinePlayerHandler.getExistingInstance();
+        if (handler == null && isBukkitAvailable()) {
+            handler = OfflinePlayerHandler.getInstance();
+        }
+
+        if (handler != null) {
+            String handlerName = handler.getKnownName(uuid);
+            if (handlerName != null && !handlerName.isEmpty()) {
+                return handlerName;
+            }
+        }
+
+        return "";
+    }
+
+    private boolean isBukkitAvailable() {
+        try {
+            return Bukkit.getServer() != null;
+        } catch (UnsupportedOperationException ex) {
+            return false;
+        }
+    }
+
+    private String resolveNameWithBukkit(UUID uuid) {
+        if (!isBukkitAvailable()) {
+            return "";
+        }
+
+        try {
+            OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(uuid);
+            if (offlinePlayer != null) {
+                String name = offlinePlayer.getName();
+                if (name != null && !name.isEmpty()) {
+                    return name;
+                }
+            }
+        } catch (Exception ex) {
+            logDebugSafe("Failed to resolve player name via Bukkit for UUID " + uuid + ": " + ex.getMessage());
+        }
+        return "";
+    }
+
+    private void logWarningSafe(String message) {
+        try {
+            PluginLogger.logWarning(message);
+        } catch (IllegalStateException ignored) {
+            // PluginLogger not initialized during unit tests
+        }
+    }
+
+    private void logDebugSafe(String message) {
+        try {
+            PluginLogger.log(LogLevel.DEBUG, message);
+        } catch (IllegalStateException ignored) {
+            // PluginLogger not initialized during unit tests
         }
     }
 
