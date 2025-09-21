@@ -101,6 +101,12 @@ public class MariaDbWorldStatsStorage implements WorldStatsPersistence {
     }
 
     private void openConnection() throws SQLException {
+        try {
+            Class.forName("org.mariadb.jdbc.Driver");
+        } catch (ClassNotFoundException ex) {
+            throw new SQLException("MariaDB driver not found on the classpath", ex);
+        }
+
         Properties properties = new Properties();
         properties.setProperty("user", settings.username());
         properties.setProperty("password", settings.password());
