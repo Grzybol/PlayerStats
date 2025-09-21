@@ -46,13 +46,20 @@ public class MariaDbWorldStatsStorage implements WorldStatsPersistence {
                     String world = resultSet.getString("world");
                     Statistic statistic = Statistic.valueOf(resultSet.getString("statistic"));
                     int value = resultSet.getInt("value");
-                    database.setPlayerName(uuid, playerName);
-                    database.setStat(uuid, world, statistic, value);
+                    applyLoadedStat(database, uuid, playerName, world, statistic, value);
                 } catch (IllegalArgumentException ex) {
                     PluginLogger.logWarning("Skipping invalid statistic entry retrieved from MariaDB: " + ex.getMessage());
                 }
             }
         }
+    }
+
+    void applyLoadedStat(WorldStatsDatabase database, UUID uuid, String playerName,
+                         String world, Statistic statistic, int value) {
+        if (playerName != null && !playerName.isEmpty()) {
+            database.setPlayerName(uuid, playerName);
+        }
+        database.setStat(uuid, world, statistic, value);
     }
 
     @Override

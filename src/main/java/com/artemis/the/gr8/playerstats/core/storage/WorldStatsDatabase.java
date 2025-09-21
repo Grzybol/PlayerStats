@@ -36,7 +36,11 @@ public class WorldStatsDatabase {
     }
 
     public void setPlayerName(UUID uuid, String playerName) {
-        getOrCreatePlayerStats(uuid).setPlayerName(playerName);
+        PlayerWorldStats stats = getOrCreatePlayerStats(uuid);
+        String incomingName = playerName != null ? playerName : "";
+        if (!incomingName.isEmpty() || stats.getPlayerName().isEmpty()) {
+            stats.setPlayerName(incomingName);
+        }
     }
 
     public String getPlayerName(UUID uuid) {
