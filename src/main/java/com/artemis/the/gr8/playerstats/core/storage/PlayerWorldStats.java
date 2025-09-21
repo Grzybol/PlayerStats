@@ -1,5 +1,6 @@
 package com.artemis.the.gr8.playerstats.core.storage;
 
+import com.google.gson.annotations.SerializedName;
 import org.bukkit.Statistic;
 
 import java.util.HashMap;
@@ -14,6 +15,9 @@ public class PlayerWorldStats {
     // Mapowanie: nazwa świata -> (statystyka -> wartość)
     private final Map<String, Map<Statistic, Integer>> worldStats = new HashMap<>();
 
+    @SerializedName("playerName")
+    private String playerName = "";
+
     public void setStat(String world, Statistic stat, int value) {
         worldStats.computeIfAbsent(world, k -> new HashMap<>()).put(stat, value);
     }
@@ -24,6 +28,14 @@ public class PlayerWorldStats {
 
     public Map<String, Map<Statistic, Integer>> getAllStats() {
         return worldStats;
+    }
+
+    public String getPlayerName() {
+        return playerName != null ? playerName : "";
+    }
+
+    public void setPlayerName(String playerName) {
+        this.playerName = playerName != null ? playerName : "";
     }
 
     public boolean clearWorld(String world) {
