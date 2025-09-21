@@ -16,7 +16,15 @@ public class WorldStatsDatabase {
     private final Map<UUID, PlayerWorldStats> playerStats = new HashMap<>();
 
     public PlayerWorldStats getOrCreatePlayerStats(UUID uuid) {
-        return playerStats.computeIfAbsent(uuid, k -> new PlayerWorldStats());
+        return getOrCreatePlayerStats(uuid, null);
+    }
+
+    public PlayerWorldStats getOrCreatePlayerStats(UUID uuid, String playerName) {
+        PlayerWorldStats stats = playerStats.computeIfAbsent(uuid, k -> new PlayerWorldStats());
+        if (playerName != null && !playerName.isEmpty()) {
+            stats.setPlayerName(playerName);
+        }
+        return stats;
     }
 
     public void setStat(UUID uuid, String world, Statistic stat, int value) {
@@ -25,6 +33,51 @@ public class WorldStatsDatabase {
 
     public int getStat(UUID uuid, String world, Statistic stat) {
         return getOrCreatePlayerStats(uuid).getStat(world, stat);
+    }
+
+    public void setPlayerName(UUID uuid, String playerName) {
+        getOrCreatePlayerStats(uuid).setPlayerName(playerName);
+    }
+
+    public String getPlayerName(UUID uuid) {
+        return getOrCreatePlayerStats(uuid).getPlayerName();
+    }
+
+    public void mergePlayerStats(UUID uuid, PlayerWorldStats stats) {
+        if (stats == null) {
+            return;
+        }
+
+        PlayerWorldStats existing = playerStats.computeIfAbsent(uuid, k -> new PlayerWorldStats());
+        String incomingName = stats.getPlayerName();
+        if (!incomingName.isEmpty() || existing.getPlayerName().isEmpty()) {
+            existing.setPlayerName(incomingName);
+        }
+
+        for (Map.Entry<String, Map<Statistic, Integer>> entry : stats.getAllStats().entrySet()) {
+            Map<Statistic, Integer> targetWorldStats = existing.getAllStats()
+                    .computeIfAbsent(entry.getKey(), key -> new HashMap<>());
+            Map<Statistic, Integer> incomingWorldStats = entry.getValue();
+            if (targetWorldStats == incomingWorldStats) {
+                continue;
+            }
+            targetWorldStats.clear();
+            targetWorldStats.putAll(incomingWorldStats);
+        }
+    }
+
+    public void replaceAll(Map<UUID, PlayerWorldStats> newData) {
+        playerStats.clear();
+        if (newData == null) {
+            return;
+        }
+        for (Map.Entry<UUID, PlayerWorldStats> entry : newData.entrySet()) {
+            UUID uuid = entry.getKey();
+            PlayerWorldStats stats = entry.getValue();
+            if (uuid != null && stats != null) {
+                mergePlayerStats(uuid, stats);
+            }
+        }
     }
 
     public Map<UUID, PlayerWorldStats> getAll() {

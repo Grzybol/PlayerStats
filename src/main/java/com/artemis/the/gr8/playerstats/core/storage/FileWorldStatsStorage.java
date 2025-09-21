@@ -53,10 +53,7 @@ public class FileWorldStatsStorage implements WorldStatsPersistence {
 
         try (Reader reader = new FileReader(file)) {
             Map<UUID, PlayerWorldStats> map = GSON.fromJson(reader, DB_TYPE);
-            database.getAll().clear();
-            if (map != null) {
-                database.getAll().putAll(map);
-            }
+            database.replaceAll(map);
         } catch (JsonSyntaxException ex) {
             throw new IOException("Invalid JSON in " + file.getAbsolutePath(), ex);
         }

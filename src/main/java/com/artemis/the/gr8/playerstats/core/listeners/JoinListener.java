@@ -40,6 +40,7 @@ public class JoinListener implements Listener {
             offlinePlayerHandler.addNewIncludedPlayer(player);
         }
 
+        updatePlayerName(player);
         // zaktualizuj lokalny cache statystyk na start
         syncPlayerStats(player);
     }
@@ -54,6 +55,8 @@ public class JoinListener implements Listener {
         if (stat.getType() != Statistic.Type.UNTYPED) {
             return;
         }
+
+        updatePlayerName(player);
 
         int delta = event.getNewValue() - event.getPreviousValue();
         if (delta <= 0) {
@@ -78,6 +81,7 @@ public class JoinListener implements Listener {
     public void onWorldChange(PlayerChangedWorldEvent event) {
         // przy zmianie świata zresetuj cache i przygotuj nowe wartości referencyjne
         Player player = event.getPlayer();
+        updatePlayerName(player);
         syncPlayerStats(player);
     }
 
@@ -121,5 +125,9 @@ public class JoinListener implements Listener {
 
     private void resetTrackedStats(UUID uuid) {
         trackedStatistics.remove(uuid);
+    }
+
+    private void updatePlayerName(Player player) {
+        db.setPlayerName(player.getUniqueId(), player.getName());
     }
 }

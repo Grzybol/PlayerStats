@@ -36,15 +36,17 @@ public class MariaDbWorldStatsStorage implements WorldStatsPersistence {
     @Override
     public void load(WorldStatsDatabase database) throws Exception {
         ensureConnection();
-        String query = "SELECT player_uuid, world, statistic, value FROM " + tableIdentifier();
+        String query = "SELECT player_uuid, player_name, world, statistic, value FROM " + tableIdentifier();
         try (PreparedStatement statement = connection.prepareStatement(query);
              ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {
                 try {
                     UUID uuid = UUID.fromString(resultSet.getString("player_uuid"));
+                    String playerName = resultSet.getString("player_name");
                     String world = resultSet.getString("world");
                     Statistic statistic = Statistic.valueOf(resultSet.getString("statistic"));
                     int value = resultSet.getInt("value");
+                    database.setPlayerName(uuid, playerName);
                     database.setStat(uuid, world, statistic, value);
                 } catch (IllegalArgumentException ex) {
                     PluginLogger.logWarning("Skipping invalid statistic entry retrieved from MariaDB: " + ex.getMessage());
@@ -58,7 +60,7 @@ public class MariaDbWorldStatsStorage implements WorldStatsPersistence {
         ensureConnection();
         String deleteSql = "DELETE FROM " + tableIdentifier();
         String insertSql = "INSERT INTO " + tableIdentifier() +
-                " (player_uuid, world, statistic, value) VALUES (?, ?, ?, ?)";
+                " (player_uuid, player_name, world, statistic, value) VALUES (?, ?, ?, ?, ?)";
         try (Statement deleteStatement = connection.createStatement();
              PreparedStatement insertStatement = connection.prepareStatement(insertSql)) {
             deleteStatement.executeUpdate(deleteSql);
@@ -66,13 +68,15 @@ public class MariaDbWorldStatsStorage implements WorldStatsPersistence {
             for (Map.Entry<UUID, PlayerWorldStats> entry : database.getAll().entrySet()) {
                 UUID uuid = entry.getKey();
                 PlayerWorldStats stats = entry.getValue();
+                String playerName = stats.getPlayerName();
                 for (Map.Entry<String, Map<Statistic, Integer>> worldEntry : stats.getAllStats().entrySet()) {
                     String world = worldEntry.getKey();
                     for (Map.Entry<Statistic, Integer> statEntry : worldEntry.getValue().entrySet()) {
                         insertStatement.setString(1, uuid.toString());
-                        insertStatement.setString(2, world);
-                        insertStatement.setString(3, statEntry.getKey().name());
-                        insertStatement.setInt(4, statEntry.getValue());
+                        insertStatement.setString(2, playerName);
+                        insertStatement.setString(3, world);
+                        insertStatement.setString(4, statEntry.getKey().name());
+                        insertStatement.setInt(5, statEntry.getValue());
                         insertStatement.addBatch();
                     }
                 }
@@ -155,6 +159,7 @@ public class MariaDbWorldStatsStorage implements WorldStatsPersistence {
     private void createTableIfNeeded() throws SQLException {
         String sql = "CREATE TABLE IF NOT EXISTS " + tableIdentifier() + " (" +
                 "player_uuid CHAR(36) NOT NULL," +
+                " player_name VARCHAR(255) NOT NULL DEFAULT ''," +
                 " world VARCHAR(255) NOT NULL," +
                 " statistic VARCHAR(64) NOT NULL," +
                 " value INT NOT NULL," +
@@ -163,9 +168,57 @@ public class MariaDbWorldStatsStorage implements WorldStatsPersistence {
             statement.executeUpdate(sql);
             connection.commit();
         }
+        ensurePlayerNameColumnExists();
     }
 
     private String tableIdentifier() {
         return "`" + settings.table().replace("`", "") + "`";
+    }
+
+    private void ensurePlayerNameColumnExists() throws SQLException {
+        String checkSql = "SELECT COUNT(*) FROM information_schema.COLUMNS " +
+                "WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = 'player_name'";
+        String databaseName = sanitizedIdentifier(settings.database());
+        String tableName = sanitizedIdentifier(settings.table());
+        boolean hasColumn = false;
+        try (PreparedStatement checkStatement = connection.prepareStatement(checkSql)) {
+            checkStatement.setString(1, databaseName);
+            checkStatement.setString(2, tableName);
+            try (ResultSet resultSet = checkStatement.executeQuery()) {
+                if (resultSet.next()) {
+                    hasColumn = resultSet.getInt(1) > 0;
+                }
+            }
+        }
+
+        if (!hasColumn) {
+            String alterSql = "ALTER TABLE " + tableIdentifier() +
+                    " ADD COLUMN player_name VARCHAR(255) NOT NULL DEFAULT '' AFTER player_uuid";
+            try (Statement alterStatement = connection.createStatement()) {
+                alterStatement.executeUpdate(alterSql);
+            }
+            connection.commit();
+        }
+
+        enforcePlayerNameColumnDefaults();
+    }
+
+    private void enforcePlayerNameColumnDefaults() throws SQLException {
+        String modifySql = "ALTER TABLE " + tableIdentifier() +
+                " MODIFY COLUMN player_name VARCHAR(255) NOT NULL DEFAULT ''";
+        try (Statement modifyStatement = connection.createStatement()) {
+            modifyStatement.executeUpdate(modifySql);
+        }
+
+        String updateSql = "UPDATE " + tableIdentifier() +
+                " SET player_name = '' WHERE player_name IS NULL";
+        try (Statement updateStatement = connection.createStatement()) {
+            updateStatement.executeUpdate(updateSql);
+        }
+        connection.commit();
+    }
+
+    private String sanitizedIdentifier(String identifier) {
+        return identifier.replace("`", "");
     }
 }
